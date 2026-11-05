@@ -45,7 +45,10 @@ python scripts/smoke_stage2.py               # сквозной тест API + W
 
 alembic -c backend/alembic.ini upgrade head  # миграции
 
-cd frontend && npm run dev                   # :5173, этап 3 — не начат
+cd frontend && npm run dev                   # :5173, прокси на :8000
+
+# скриншоты и замеры (нужны запущенные эмулятор, backend и vite)
+python scripts/shots.py                      # docs/assessment/checks/shots/
 ```
 
 Dev-пользователи (создаются при `ENV=dev`): `operator` (production_specialist),
@@ -81,6 +84,10 @@ python -m pytest tests/test_design_md.py -q
 
 Правила применения — `frontend/AGENTS.md`. MCP-сервер каталога не подключается:
 `mcp.gradientdeck.com/mcp` отвечает 404 (проверено трижды).
+
+Что уже собрано (этап 3, часть 1): вход, обзор, производство с живыми
+значениями по WS, журнал, настройки и 6 честных заглушек. Скриншоты и замеры —
+`docs/assessment/checks/shots/`, отчёт — `docs/assessment/report-stage3-ui.md`.
 
 ## Границы безопасности
 
