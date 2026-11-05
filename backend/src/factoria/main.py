@@ -8,8 +8,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from factoria.api import auth as auth_api
+from factoria.api import commands as commands_api
+from factoria.api import orders as orders_api
 from factoria.api import state as state_api
 from factoria.api import system as system_api
+from factoria.adapters.stub import StubAdapter
 from factoria.config import Settings, get_settings
 from factoria.opcua.client import OpcuaClient
 from factoria.realtime.cache import TagCache
@@ -68,10 +71,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.registry = registry
     app.state.cache = cache
+    app.state.ones = StubAdapter()
 
     app.include_router(auth_api.router)
     app.include_router(state_api.router)
     app.include_router(system_api.router)
+    app.include_router(commands_api.router)
+    app.include_router(orders_api.router)
     app.include_router(ws_router)
 
     @app.get("/")

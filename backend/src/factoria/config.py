@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     tag_history_retention_h: int = 72
 
     autonomy_max: str = "A1"
+    allowed_write_targets: str = "L1,L2,L3"
     allow_external_api: bool = False
     ones_mode: str = "stub"
 
@@ -49,6 +50,10 @@ class Settings(BaseSettings):
                 "включите OPCUA_ALLOW_REMOTE=true осознанно (docs/security/ot-baseline.md)"
             )
         return self
+
+    @property
+    def allowed_targets(self) -> list[str]:
+        return [item.strip() for item in self.allowed_write_targets.split(",") if item.strip()]
 
 
 @lru_cache

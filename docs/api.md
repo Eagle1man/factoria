@@ -3,15 +3,22 @@
 База: `/api/v1`. Формат ошибок: `422/4xx {stage, code, detail}` (§5.2).
 Все временные метки — ISO 8601 UTC.
 
-## 0. Статус реализации (2026-11-05)
+## 0. Статус реализации (2026-11-06)
 
-| Реализовано на этапе 2 | Не реализовано (этап 4a+) |
+| Реализовано | Не реализовано |
 |---|---|
-| `POST /auth/login`, `GET /auth/me` | `POST /commands`, `GET /commands/{id}` |
-| `GET /equipment`, `GET /equipment/{id}/state` | `POST /commands/{id}/approve`, `/reject` |
-| `GET /tags/history` | `GET /orders/*`, `GET /commands` (список) |
-| `GET /health`, `GET /audit` | 7 PLANNED путей под 2D-панель (§5) |
-| `WS /ws` (subscribe, resume, ping) | `command_status`, `command_resolved` в WS |
+| `POST /auth/login`, `GET /auth/me` | 7 PLANNED путей под 2D-панель (§5) |
+| `GET /equipment`, `GET /equipment/{id}/state`, `GET /tags/history` | `GET /agents/sessions`, `/twin`, `/sim/runs` |
+| `POST /commands`, `GET /commands`, `GET /commands/{id}` | `command_status` / `command_resolved` в WS |
+| `POST /commands/{id}/approve`, `/reject` (A1, TTL 5 мин) | уведомление оператору при A2 |
+| `GET /orders`, `GET /orders/{id}`, `POST /debug/orders` (только dev) | HTTP-сервисы 1С (этап 4b) |
+| `GET /health`, `GET /audit`, `WS /ws` | |
+
+Команды исполняются через method-ноды эмулятора: `set_setpoint → SetSpeed`,
+`switch_recipe → SetRecipe`, `line_start/stop → StartLine/StopLine`,
+`reallocate_job → ReallocateJob`.
+Ошибки валидации: `422 {stage, code, detail}`; повтор `command_id` возвращает
+текущий статус с `duplicate: true`.
 
 ## 1. Аутентификация
 

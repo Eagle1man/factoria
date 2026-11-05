@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "envelope": {
+    "required": ["command_id", "type", "target", "params", "requested_by", "correlation_id"],
+    "max_evidence": 20
+  },
+  "commands": {
+    "set_setpoint": {
+      "title": "Уставка скорости",
+      "target": "line",
+      "risk": "A1",
+      "requires_evidence": true,
+      "params": {
+        "setpoint_value": { "type": "float", "min": 0, "max": 1200 }
+      }
+    },
+    "switch_recipe": {
+      "title": "Смена рецепта",
+      "target": "line",
+      "risk": "A1",
+      "requires_evidence": true,
+      "params": {
+        "recipe_id": { "type": "enum", "values": ["R1", "R2", "R3", "R4", "R5"] }
+      }
+    },
+    "line_start": {
+      "title": "Пуск линии",
+      "target": "line",
+      "risk": "A1",
+      "requires_evidence": true,
+      "params": {}
+    },
+    "line_stop": {
+      "title": "Останов линии",
+      "target": "line",
+      "risk": "A1",
+      "requires_evidence": true,
+      "params": {}
+    },
+    "reallocate_job": {
+      "title": "Перераспределение заказа",
+      "target": "line",
+      "risk": "A1",
+      "requires_evidence": true,
+      "params": {
+        "job_id": { "type": "string", "min_length": 1, "max_length": 64 }
+      }
+    }
+  },
+  "codes": {
+    "SCHEMA_001": "payload не соответствует контракту",
+    "RANGE_001": "значение вне диапазона тега",
+    "INTERLOCK_001": "скачок уставки больше 800 rpm",
+    "INTERLOCK_002": "перегрев: уставка выше порога при Temp > 80",
+    "INTERLOCK_004": "перегруз линии: перераспределение запрещено",
+    "DATA_STALE": "данные устарели или недоступны",
+    "AUTONOMY_001": "цель вне allowlist или действие запрещено ролью",
+    "APPROVAL_001": "требуется подтверждение человека"
+  }
+}

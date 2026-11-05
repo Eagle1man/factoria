@@ -1,0 +1,33 @@
+version: 1
+# Один предикат на дельту (ADR-112): |new - current| > 800 -> отказ оборудования.
+rules:
+  - id: delta-too-large
+    applies_to: [set_setpoint]
+    when:
+      param: abs_delta
+      op: ">"
+      value: 800
+    code: INTERLOCK_001
+    detail: "скачок уставки больше 800 rpm"
+
+  - id: hot-line-high-setpoint
+    applies_to: [set_setpoint]
+    when:
+      tag: "Temp.PV"
+      op: ">"
+      value: 80
+    and_param:
+      param: setpoint_value
+      op: ">"
+      value: 400
+    code: INTERLOCK_002
+    detail: "перегрев: уставка выше 400 rpm при Temp > 80"
+
+  - id: overload-reallocate
+    applies_to: [reallocate_job]
+    when:
+      tag: "Load.Pct"
+      op: ">"
+      value: 95
+    code: INTERLOCK_004
+    detail: "перегруз линии: перераспределение запрещено"
