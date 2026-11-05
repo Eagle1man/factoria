@@ -40,7 +40,7 @@ python scripts/gen-bindings.py               # frontend/src/scene/bindings.ts
 
 # backend (этап 2): нужен PYTHONPATH на backend/src
 $env:PYTHONPATH="D:\factoria\backend\src"
-python -m uvicorn factoria.main:app --port 8000
+python -m uvicorn factoria.main:app --port 8010
 python scripts/smoke_stage2.py               # сквозной тест API + WS
 
 alembic -c backend/alembic.ini upgrade head  # миграции
@@ -54,6 +54,10 @@ python scripts/shots.py                      # docs/assessment/checks/shots/
 Dev-пользователи (создаются при `ENV=dev`): `operator` (production_specialist),
 `technologist`, `auditor`, `lead` (project_lead). Пароль — `DEV_DEFAULT_PASSWORD`,
 по умолчанию `dev-password`.
+
+Backend слушает **8010**, а не 8000: в этой среде uvicorn на 8000 зависает без
+логов (asyncio и `http.server` на том же порту работают). Прокси Vite настроен
+на 8010.
 
 Клиент адресует теги строковым NodeId: `ns=2;s=L1.Speed.SP`.
 Запись — только методами `L1.SetSpeed`, `L1.SetRecipe`, `L1.StartLine`,

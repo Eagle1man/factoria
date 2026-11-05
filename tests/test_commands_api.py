@@ -243,3 +243,52 @@ def test_expired_command_leaves_queue():
             f"/api/v1/commands/{command_id}/approve", json={"version": 1}, headers=headers
         )
         assert approve.status_code == 409
+
+def test_a2_executes_without_approval(monkeypatch):
+    async def fake_dispatch(**kwargs):
+        return True, "EXECUTED"
+
+    monkeypatch.setattr(commands_api, "dispatch_command", fake_dispatch)
+    settings = Settings(env="test", opcua_enabled=False, autonomy_max="A2")
+    app = create_app(settings)
+    app.state.cache.update("L1.Speed.SP", 340.0)
+    app.state.cache.update("L1.Temp.PV", 40.0)
+    app.state.cache.update("L1.Load.Pct", 30.0)
+
+    with TestClient(app) as client:
+        headers = login(client)
+        response = client.post(
+            "/api/v1/commands",
+            json=payload(params={"setpoint_value": 380}),
+            headers=headers,
+        )
+        assert response.status_code == 202, response.text
+        body = response.json()
+        assert body["status"] == "EXECUTED"
+        assert body["autonomy_level"] == "A2"
+
+        detail = client.get(f"/api/v1/commands/{body['command_id']}", headers=headers).json()
+        assert detail["status"] == "EXECUTED"
+
+
+def test_a2_corridor_keeps_approval_for_large_step(monkeypatch):
+    async def fake_dispatch(**kwargs):
+        return True, "EXECUTED"
+
+    monkeypatch.setattr(commands_api, "dispatch_command", fake_dispatch)
+    settings = Settings(env="test", opcua_enabled=False, autonomy_max="A2")
+    app = create_app(settings)
+    app.state.cache.update("L1.Speed.SP", 340.0)
+    app.state.cache.update("L1.Temp.PV", 40.0)
+    app.state.cache.update("L1.Load.Pct", 30.0)
+
+    with TestClient(app) as client:
+        headers = login(client)
+        response = client.post(
+            "/api/v1/commands",
+            json=payload(params={"setpoint_value": 500}),
+            headers=headers,
+        )
+        assert response.status_code == 202
+        assert response.json()["status"] == "AWAITING_APPROVAL"
+        assert response.json()["autonomy_level"] == "A1"

@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import httpx
 
-BASE = "http://127.0.0.1:8000"
+BASE = "http://127.0.0.1:8010"
 
 
 def main() -> int:

@@ -7,13 +7,36 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+
+import asyncio
 
 import httpx
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:5173"
-API = "http://127.0.0.1:8000"
+API = "http://127.0.0.1:8010"
+OPCUA = "opc.tcp://127.0.0.1:48400"
+
+
+def warm_up() -> None:
+    """Разгоняет L1, чтобы на сцене были обороты и нагрев, а не нули."""
+    from asyncua import Client as UaClient
+
+    async def go() -> None:
+        async with UaClient(OPCUA) as client:
+            index = await client.get_namespace_index("urn:mfg:emulator")
+            line = client.get_node(f"ns={index};s=L1")
+            await line.call_method(client.get_node(f"ns={index};s=L1.StartLine").nodeid)
+            await line.call_method(client.get_node(f"ns={index};s=L1.SetSpeed").nodeid, 700.0)
+            await asyncio.sleep(0.2)
+            await line.call_method(client.get_node(f"ns={index};s=L1.SetSpeed").nodeid, 900.0)
+
+    try:
+        asyncio.run(go())
+    except Exception as exc:  # noqa: BLE001 - сцена всё равно снимется
+        print("warm_up skipped:", exc)
 OUT = Path(__file__).resolve().parent.parent / "docs" / "assessment" / "checks" / "shots"
 SIZES = [(1920, 1080), (1280, 800), (1024, 768)]
 PAGES = [
@@ -23,6 +46,7 @@ PAGES = [
     ("approvals", "/approvals"),
     ("audit", "/audit"),
     ("settings", "/settings"),
+    ("scene", "/scene"),
 ]
 
 MEASURE = """
@@ -100,6 +124,9 @@ def main() -> int:
         )
 
     results: dict = {}
+    only = os.environ.get("SHOTS_ONLY")
+    pages = [item for item in PAGES if not only or item[0] == only]
+    warm_up()
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
         for width, height in SIZES:
@@ -108,10 +135,14 @@ def main() -> int:
             )
             page = context.new_page()
             page.add_init_script(f"sessionStorage.setItem('factoria.token', {json.dumps(token)})")
-            for name, path in PAGES:
-                page.goto(f"{BASE}{path}", wait_until="networkidle")
+            for name, path in pages:
+                wait = "domcontentloaded" if name == "scene" else "networkidle"
+                page.goto(f"{BASE}{path}", wait_until=wait, timeout=45000)
                 page.evaluate("document.fonts.ready")
                 page.wait_for_timeout(1200)
+                if name == "scene":
+                    page.wait_for_selector("canvas", timeout=20000)
+                    page.wait_for_timeout(2000)
                 if name == "approvals":
                     item = page.query_selector(".queue-item")
                     if item:

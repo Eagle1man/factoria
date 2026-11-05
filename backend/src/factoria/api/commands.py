@@ -92,6 +92,46 @@ def _command_dict(command: Command) -> dict:
     }
 
 
+def _publish(request: Request, command: Command) -> None:
+    request.app.state.events.publish(
+        {
+            "type": "command_status",
+            "command_id": command.command_id,
+            "status": command.status,
+            "autonomy_level": command.autonomy_level,
+            "line_id": command.target_line,
+        }
+    )
+
+
+async def _execute(
+    command: Command, request: Request, session: AsyncSession, actor: str
+) -> tuple[bool, str]:
+    settings = request.app.state.settings
+    command.status = "DISPATCHING"
+    await session.commit()
+
+    ok, detail = await dispatch_command(
+        endpoint=settings.opcua_endpoint,
+        namespace=request.app.state.registry.namespace,
+        line_id=command.target_line,
+        command_type=command.type,
+        params=json.loads(command.params),
+    )
+
+    command.status = "EXECUTED" if ok else "FAILED"
+    await session.commit()
+    await audit.write(
+        "execution",
+        "executed" if ok else "failed",
+        actor=actor,
+        subject=command.command_id,
+        payload={"detail": detail},
+        correlation_id=command.correlation_id,
+    )
+    return ok, detail
+
+
 @router.post("/commands", status_code=202)
 async def submit_command(
     body: CommandRequest,
@@ -170,11 +210,17 @@ async def submit_command(
             content={"stage": last.stage, "code": result.code, "detail": result.detail},
         )
 
+    # A2: исполняем без человека, но с уведомлением и аудитом (ТЗ §6.4, §6.7).
+    if result.status == "APPROVED":
+        await _execute(command, request, session, body.requested_by.id)
+
+    _publish(request, command)
+
     return {
         "command_id": body.command_id,
-        "status": result.status,
+        "status": command.status,
         "autonomy_level": result.autonomy,
-        "expires_in": TTL_MINUTES * 60,
+        "expires_in": TTL_MINUTES * 60 if command.status == "AWAITING_APPROVAL" else 0,
         "duplicate": False,
     }
 
@@ -244,15 +290,7 @@ async def approve_command(
     command.version += 1
     await session.commit()
 
-    ok, detail = await dispatch_command(
-        endpoint=settings.opcua_endpoint,
-        namespace=request.app.state.registry.namespace,
-        line_id=command.target_line,
-        command_type=command.type,
-        params=json.loads(command.params),
-    )
-
-    command.status = "EXECUTED" if ok else "FAILED"
+    ok, detail = await _execute(command, request, session, principal.user_id)
     session.add(
         Approval(
             id=str(uuid4()),
@@ -263,15 +301,7 @@ async def approve_command(
         )
     )
     await session.commit()
-
-    await audit.write(
-        "execution",
-        "executed" if ok else "failed",
-        actor=principal.user_id,
-        subject=command_id,
-        payload={"detail": detail},
-        correlation_id=command.correlation_id,
-    )
+    _publish(request, command)
     return {"command_id": command_id, "status": command.status, "detail": detail}
 
 
@@ -279,6 +309,7 @@ async def approve_command(
 async def reject_command(
     command_id: str,
     body: RejectRequest,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(require("operator")),
 ) -> dict:
@@ -313,4 +344,5 @@ async def reject_command(
         payload={"reason": body.reason},
         correlation_id=command.correlation_id,
     )
+    _publish(request, command)
     return {"command_id": command_id, "status": command.status}

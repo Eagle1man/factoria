@@ -16,6 +16,7 @@ from factoria.adapters.stub import StubAdapter
 from factoria.config import Settings, get_settings
 from factoria.opcua.client import OpcuaClient
 from factoria.realtime.cache import TagCache
+from factoria.realtime.events import EventBus
 from factoria.realtime.history import HistoryWriter
 from factoria.realtime.ws import router as ws_router
 from factoria.seed import ensure_dev_users
@@ -71,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.registry = registry
     app.state.cache = cache
+    app.state.events = EventBus()
     app.state.ones = StubAdapter()
 
     app.include_router(auth_api.router)

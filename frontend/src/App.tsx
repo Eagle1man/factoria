@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import Layout from './components/Layout'
@@ -9,6 +10,8 @@ import Settings from './pages/Settings'
 import Approvals from './pages/Approvals'
 import Documents from './pages/Documents'
 import Stub from './pages/Stub'
+
+const Scene = lazy(() => import('./pages/Scene'))
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { ready, role } = useAuth()
@@ -84,17 +87,9 @@ export default function App() {
           <Route
             path="scene"
             element={
-              <Stub
-                title="3D-сцена"
-                subtitle="Модель линии и привязка к тегам"
-                stage="этапе 3, после панели"
-                items={[
-                  'Три линии с вращением ротора по Speed.PV',
-                  'Нагрев корпуса по Temp.PV',
-                  'Индикатор работы и мигание при аварии',
-                  'Серый меш при качестве STALE/BAD',
-                ]}
-              />
+              <Suspense fallback={<div className="skeleton" style={{ height: 480 }} />}>
+                <Scene />
+              </Suspense>
             }
           />
           <Route path="audit" element={<Audit />} />

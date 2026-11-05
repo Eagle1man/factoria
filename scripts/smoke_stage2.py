@@ -6,8 +6,8 @@ import httpx
 import websockets
 from asyncua import Client
 
-BASE = "http://127.0.0.1:8000"
-WS = "ws://127.0.0.1:8000/ws"
+BASE = "http://127.0.0.1:8010"
+WS = "ws://127.0.0.1:8010/ws"
 OPCUA = "opc.tcp://127.0.0.1:48400"
 
 

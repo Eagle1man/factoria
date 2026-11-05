@@ -84,7 +84,7 @@
 {"type":"snapshot","seq":10231,"values":{"L1.Speed.PV":{"v":712.4,"q":"good","ts":"…"}}}
 {"type":"delta","seq":10232,"values":{"L1.Speed.PV":{"v":712.9}}}
 {"type":"command_status","command_id":"…","status":"AWAITING_APPROVAL"}
-{"type":"command_resolved","command_id":"…","status":"APPROVED"}
+{"type":"command_status","command_id":"…","status":"EXECUTED","autonomy_level":"A2","line_id":"L2"}
 {"type":"error","code":"stale","tags":["L3.Load.Pct"]}
 ```
 

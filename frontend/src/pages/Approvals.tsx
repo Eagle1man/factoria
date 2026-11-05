@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type CommandSummary, type TagValue } from '../lib/api'
+import { api, getToken, type CommandSummary, type TagValue } from '../lib/api'
+import { useTags } from '../lib/stream'
 import { Badge, ErrorState, Panel, SkeletonRows, formatNumber, formatTime } from '../components/ui'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -58,6 +59,7 @@ function after(command: CommandSummary): string {
 
 export default function Approvals() {
   const [items, setItems] = useState<CommandSummary[] | null>(null)
+  const [a2, setA2] = useState<CommandSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [values, setValues] = useState<Record<string, TagValue>>({})
   const [error, setError] = useState<unknown>(null)
@@ -69,13 +71,20 @@ export default function Approvals() {
 
   const load = useCallback(() => {
     api
-      .commands('AWAITING_APPROVAL')
+      .commands()
       .then((result) => {
-        setItems(result.commands)
+        setItems(result.commands.filter((command) => command.status === 'AWAITING_APPROVAL'))
+        setA2(result.commands.filter((command) => command.autonomy_level === 'A2').slice(0, 5))
         setError(null)
       })
       .catch(setError)
   }, [])
+
+  const { commandEvent } = useTags(getToken())
+
+  useEffect(() => {
+    if (commandEvent) load()
+  }, [commandEvent, load])
 
   useEffect(() => {
     load()
@@ -278,6 +287,48 @@ export default function Approvals() {
           )}
         </div>
       )}
+
+      <Panel
+        title="Автономные действия (A2)"
+        hint="исполнены без человека, событие записано в журнал"
+      >
+        {a2.length === 0 ? (
+          <div className="muted" style={{ fontSize: 12 }}>
+            Пока нет автоматических действий. Они разрешаются флагом{' '}
+            <span className="mono">AUTONOMY_MAX=A2</span> и только для уставки в безопасном
+            коридоре.
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Действие</th>
+                  <th>Линия</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {a2.map((command) => (
+                  <tr key={command.command_id}>
+                    <td className="mono">
+                      {command.created_at ? formatTime(command.created_at) : '—'}
+                    </td>
+                    <td>{TYPE_LABEL[command.type] ?? command.type}</td>
+                    <td className="mono">{command.line_id}</td>
+                    <td>
+                      <Badge tone={command.status === 'EXECUTED' ? 'good' : 'warn'}>
+                        {command.status.toLowerCase()}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </>
   )
 }

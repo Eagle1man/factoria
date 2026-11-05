@@ -3,6 +3,14 @@ import type { Quality, TagValue } from './api'
 
 export type StreamState = 'connecting' | 'open' | 'closed'
 
+export interface CommandEvent {
+  type: 'command_status'
+  command_id: string
+  status: string
+  autonomy_level?: string
+  line_id?: string
+}
+
 interface Delta {
   seq: number
   values: Record<string, TagValue>
@@ -15,10 +23,12 @@ export function useTags(token: string | null): {
   values: Record<string, TagValue>
   seq: number
   state: StreamState
+  commandEvent: CommandEvent | null
 } {
   const [values, setValues] = useState<Record<string, TagValue>>({})
   const [seq, setSeq] = useState(0)
   const [state, setState] = useState<StreamState>('connecting')
+  const [commandEvent, setCommandEvent] = useState<CommandEvent | null>(null)
   const seqRef = useRef(0)
 
   useEffect(() => {
@@ -60,6 +70,8 @@ export function useTags(token: string | null): {
             seqRef.current = message.seq
             setSeq(message.seq)
           }
+        } else if (message.type === 'command_status') {
+          setCommandEvent(message as CommandEvent)
         }
       }
 
@@ -82,7 +94,7 @@ export function useTags(token: string | null): {
     }
   }, [token])
 
-  return { values, seq, state }
+  return { values, seq, state, commandEvent }
 }
 
 export function qualityOf(value: TagValue | undefined): Quality {

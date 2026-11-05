@@ -1,23 +1,21 @@
-"""WebSocket: snapshot, delta, resume (ТЗ §5.4)."""
+"""WebSocket: snapshot, delta, resume и command_status (ТЗ §5.4)."""
 from __future__ import annotations
 
 import asyncio
 import json
-import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from factoria.auth.rbac import PERMISSIONS
 from factoria.auth.security import decode_token
 from factoria.realtime.cache import TagCache
-
-LOG = logging.getLogger("ws")
+from factoria.realtime.events import EventBus
 
 router = APIRouter()
 
 MAX_SUBSCRIBE_TAGS = 21
-REDISCONNECT_POLICY = (1, 2, 5, 10)  # информативно: клиент реализует сам (ТЗ §8.3)
 
 
 def _now_iso() -> str:
@@ -25,18 +23,24 @@ def _now_iso() -> str:
 
 
 class WsSession:
-    def __init__(self, ws: WebSocket, cache: TagCache, role: str) -> None:
+    """Три задачи: дельты, события шины, отправка. Отправка — одна, без гонок."""
+
+    def __init__(self, ws: WebSocket, cache: TagCache, role: str, bus: EventBus) -> None:
         self.ws = ws
         self.cache = cache
         self.role = role
+        self.bus = bus
         self.tags: list[str] = []
         self.delta_only = True
         self.min_interval = 0.1
         self.queue: asyncio.Queue | None = None
-        self._last_sent = 0.0
+        self.events: asyncio.Queue = bus.subscribe()
+        self.outgoing: asyncio.Queue = asyncio.Queue(maxsize=1024)
 
     async def run(self) -> None:
-        sender = asyncio.create_task(self._send_loop(), name="ws-sender")
+        deltas = asyncio.create_task(self._delta_loop(), name="ws-deltas")
+        events = asyncio.create_task(self._event_loop(), name="ws-events")
+        sender = asyncio.create_task(self._sender_loop(), name="ws-sender")
         try:
             while True:
                 raw = await self.ws.receive_text()
@@ -49,9 +53,11 @@ class WsSession:
         except WebSocketDisconnect:
             pass
         finally:
-            sender.cancel()
+            for task in (deltas, events, sender):
+                task.cancel()
             if self.queue is not None:
                 self.cache.unsubscribe(self.queue)
+            self.bus.unsubscribe(self.events)
 
     async def _handle(self, message: dict) -> None:
         kind = message.get("type")
@@ -60,7 +66,7 @@ class WsSession:
         elif kind == "resume":
             await self._resume(int(message.get("last_seq", 0)))
         elif kind == "ping":
-            await self.ws.send_json({"type": "pong", "ts": _now_iso()})
+            await self.outgoing.put({"type": "pong", "ts": _now_iso()})
         else:
             await self._error("unknown_message")
 
@@ -70,9 +76,9 @@ class WsSession:
         if not isinstance(requested, list) or len(requested) > MAX_SUBSCRIBE_TAGS:
             await self._error("bad_tags")
             return
-        unknown = [t for t in requested if t not in known]
+        unknown = [tag for tag in requested if tag not in known]
         if unknown:
-            await self.ws.send_json({"type": "error", "code": "unknown_tags", "tags": unknown})
+            await self.outgoing.put({"type": "error", "code": "unknown_tags", "tags": unknown})
             return
 
         if self.queue is not None:
@@ -83,23 +89,25 @@ class WsSession:
         self.queue = self.cache.subscribe()
 
         snapshot = self.cache.snapshot(self.tags)
-        await self.ws.send_json({"type": "snapshot", **snapshot})
-        stale = [t for t in self.tags if snapshot["values"].get(t, {}).get("q") != "GOOD"]
+        await self.outgoing.put({"type": "snapshot", **snapshot})
+        stale = [tag for tag in self.tags if snapshot["values"].get(tag, {}).get("q") != "GOOD"]
         if stale:
-            await self.ws.send_json({"type": "error", "code": "stale", "tags": stale})
+            await self.outgoing.put({"type": "error", "code": "stale", "tags": stale})
 
     async def _resume(self, last_seq: int) -> None:
         deltas, complete = self.cache.deltas_since(last_seq)
         if not complete:
-            await self.ws.send_json({"type": "snapshot", **self.cache.snapshot(self.tags or None)})
+            await self.outgoing.put({"type": "snapshot", **self.cache.snapshot(self.tags or None)})
             return
-        await self.ws.send_json({"type": "resumed", "from": last_seq, "count": len(deltas)})
+        await self.outgoing.put({"type": "resumed", "from": last_seq, "count": len(deltas)})
         for item in deltas:
-            await self.ws.send_json({"type": "delta", "seq": item["seq"], "values": item["values"]})
+            await self.outgoing.put(
+                {"type": "delta", "seq": item["seq"], "values": item["values"]}
+            )
 
-    async def _send_loop(self) -> None:
+    async def _delta_loop(self) -> None:
         loop = asyncio.get_running_loop()
-        buffer: dict[str, dict] = {}
+        buffer: dict[str, dict[str, Any]] = {}
         last_seq = 0
         try:
             while True:
@@ -108,38 +116,50 @@ class WsSession:
                     continue
                 seq, values = await self.queue.get()
                 if self.tags:
-                    values = {t: v for t, v in values.items() if t in self.tags}
+                    values = {tag: value for tag, value in values.items() if tag in self.tags}
                     if not values:
                         continue
                 buffer.update(values)
                 last_seq = seq
 
-                elapsed = loop.time() - self._last_sent
+                elapsed = loop.time() - getattr(self, "_last_sent", 0.0)
                 if elapsed < self.min_interval:
                     await asyncio.sleep(self.min_interval - elapsed)
                 while not self.queue.empty():
                     seq2, more = self.queue.get_nowait()
                     if self.tags:
-                        more = {t: v for t, v in more.items() if t in self.tags}
+                        more = {tag: value for tag, value in more.items() if tag in self.tags}
                     buffer.update(more)
                     last_seq = seq2
 
-                if self.delta_only and buffer and all(v["q"] == "BAD" for v in buffer.values()):
-                    # BAD-качество не прячем: клиент обязан гасить показания (ТЗ §8.3)
-                    pass
-                await self.ws.send_json({"type": "delta", "seq": last_seq, "values": buffer})
+                await self.outgoing.put(
+                    {"type": "delta", "seq": last_seq, "values": buffer}
+                )
                 buffer = {}
                 self._last_sent = loop.time()
+        except asyncio.CancelledError:
+            raise
+
+    async def _event_loop(self) -> None:
+        try:
+            while True:
+                event = await self.events.get()
+                await self.outgoing.put(event)
+        except asyncio.CancelledError:
+            raise
+
+    async def _sender_loop(self) -> None:
+        try:
+            while True:
+                message = await self.outgoing.get()
+                await self.ws.send_json(message)
         except (WebSocketDisconnect, RuntimeError):
             return
         except asyncio.CancelledError:
             raise
 
     async def _error(self, code: str) -> None:
-        try:
-            await self.ws.send_json({"type": "error", "code": code})
-        except RuntimeError:
-            pass
+        await self.outgoing.put({"type": "error", "code": code})
 
 
 @router.websocket("/ws")
@@ -158,5 +178,6 @@ async def ws_endpoint(websocket: WebSocket) -> None:
 
     await websocket.accept()
     cache: TagCache = websocket.app.state.cache
-    session = WsSession(websocket, cache, role)
+    bus: EventBus = websocket.app.state.events
+    session = WsSession(websocket, cache, role, bus)
     await session.run()
