@@ -1,0 +1,97 @@
+version: 1
+namespace: "urn:mfg:emulator"
+
+thresholds:
+  speed_threshold: 400       # new > 400 rpm -> A1 (TZ 6.5)
+  speed_max: 1200            # верх диапазона уставки
+  speed_delta_interlock: 800 # |delta| > 800 -> interlock (TZ 6.5, OD-02)
+  temp_alarm: 80             # физический interlock температуры
+  load_alarm: 95             # физический interlock нагрузки
+  load_alarm_hold_s: 60      # сколько держать Load > 95 до автостопа
+
+defaults:
+  max_age_seconds: 3
+  deadband: 0.5
+  publish_interval_ms: 500
+
+lines: [L1, L2, L3]
+recipes: [R1, R2, R3, R4, R5]
+
+# Шаблоны тегов. {line} подставляется для каждой линии из lines.
+tags:
+  - name: Running
+    type: bool
+    writable: false
+    command: [line_start, line_stop]
+    max_age_seconds: 3
+
+  - name: Speed.SP
+    type: float
+    unit: rpm
+    min: 0
+    max: 1200
+    writable: false
+    command: [set_setpoint]
+    max_age_seconds: 3
+    deadband: 0.5
+
+  - name: Speed.PV
+    type: float
+    unit: rpm
+    min: 0
+    max: 1200
+    writable: false
+    max_age_seconds: 3
+    deadband: 0.5
+
+  - name: Temp.PV
+    type: float
+    unit: degC
+    min: 20
+    max: 120
+    writable: false
+    max_age_seconds: 3
+    deadband: 0.2
+
+  - name: Load.Pct
+    type: float
+    unit: percent
+    min: 0
+    max: 100
+    writable: false
+    max_age_seconds: 3
+    deadband: 0.5
+
+  - name: Alarm.Code
+    type: uint16
+    min: 0
+    max: 999
+    writable: false
+    max_age_seconds: 5
+
+  - name: Recipe.ID
+    type: string
+    enum: [R1, R2, R3, R4, R5]
+    writable: false
+    command: [switch_recipe]
+    max_age_seconds: 30
+
+methods:
+  - name: SetSpeed
+    args:
+      - { name: value, type: double }
+    result: StatusCode
+  - name: SetRecipe
+    args:
+      - { name: recipe_id, type: string }
+    result: StatusCode
+  - name: StartLine
+    args: []
+    result: StatusCode
+  - name: StopLine
+    args: []
+    result: StatusCode
+  - name: ReallocateJob
+    args:
+      - { name: job_id, type: string }
+    result: StatusCode

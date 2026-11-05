@@ -29,10 +29,18 @@
 (проверено: `docker info` не отвечает). Все компоненты запускаются локально:
 
 ```bash
-python opcua-emulator/emulator.py            # :4840
-uvicorn factoria.main:app --reload           # :8000
-cd frontend && npm run dev                   # :5173
+python opcua-emulator/emulator.py            # :48400 (4840 занят opcualds)
+python opcua-emulator/emulator.py --seconds 10
+python -m pytest -q                          # 20 тестов этапа 1
+python scripts/gen-tag-registry.py           # docs/tag-registry.md
+python scripts/gen-bindings.py               # frontend/src/scene/bindings.ts
+uvicorn factoria.main:app --reload           # :8000, этап 2 — не начат
+cd frontend && npm run dev                   # :5173, этап 3 — не начат
 ```
+
+Клиент адресует теги строковым NodeId: `ns=2;s=L1.Speed.SP`.
+Запись — только методами `L1.SetSpeed`, `L1.SetRecipe`, `L1.StartLine`,
+`L1.StopLine`, `L1.ReallocateJob`.
 
 FUXA и InfluxDB отложены; витрина — HTML на `GET /api/v1/equipment/{id}/state`.
 

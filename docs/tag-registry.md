@@ -6,18 +6,37 @@
 
 ## 1. Состав: 21 тег = 7 × 3 линии
 
-| Тег | Тип OPC UA | Диапазон | Единица | Источник записи |
-|---|---|---|---|---|
-| `{L}.Running` | Boolean | — | — | `StartLine()` / `StopLine()` |
-| `{L}.Speed.SP` | Float | 0…1200 | rpm | `SetSpeed(value)` |
-| `{L}.Speed.PV` | Float | 0…1200 | rpm | эмулятор (τ=2 c) |
-| `{L}.Temp.PV` | Float | 20…120 | °C | эмулятор |
-| `{L}.Load.Pct` | Float | 0…100 | % | эмулятор |
-| `{L}.Alarm.Code` | UInt16 | 0…999 | — | эмулятор |
-| `{L}.Recipe.ID` | String | R1…R5 | — | `SetRecipe(recipe_id)` |
-
 `{L}` ∈ {L1, L2, L3}. Расхождение ТЗ §4.3 («18 тегов») с таблицей §4.2 (21) —
-ошибка счёта; принимаем 21.
+ошибка счёта; принимаем 21. Таблица ниже генерируется из
+`backend/src/factoria/tags/registry.yaml`.
+
+<!-- BEGIN GENERATED: не редактировать вручную, см. scripts/gen-tag-registry.py -->
+| Тег | Тип | Диапазон | Ед. | max_age, c | Запись через |
+|---|---|---|---|---|---|
+| `L1.Running` | bool | — | — | 3 | StartLine() / StopLine() |
+| `L1.Speed.SP` | float | 0…1200 | rpm | 3 | SetSpeed(value) |
+| `L1.Speed.PV` | float | 0…1200 | rpm | 3 | — |
+| `L1.Temp.PV` | float | 20…120 | degC | 3 | — |
+| `L1.Load.Pct` | float | 0…100 | percent | 3 | — |
+| `L1.Alarm.Code` | uint16 | 0…999 | — | 5 | — |
+| `L1.Recipe.ID` | string | R1…R5 | — | 30 | SetRecipe(id) |
+| `L2.Running` | bool | — | — | 3 | StartLine() / StopLine() |
+| `L2.Speed.SP` | float | 0…1200 | rpm | 3 | SetSpeed(value) |
+| `L2.Speed.PV` | float | 0…1200 | rpm | 3 | — |
+| `L2.Temp.PV` | float | 20…120 | degC | 3 | — |
+| `L2.Load.Pct` | float | 0…100 | percent | 3 | — |
+| `L2.Alarm.Code` | uint16 | 0…999 | — | 5 | — |
+| `L2.Recipe.ID` | string | R1…R5 | — | 30 | SetRecipe(id) |
+| `L3.Running` | bool | — | — | 3 | StartLine() / StopLine() |
+| `L3.Speed.SP` | float | 0…1200 | rpm | 3 | SetSpeed(value) |
+| `L3.Speed.PV` | float | 0…1200 | rpm | 3 | — |
+| `L3.Temp.PV` | float | 20…120 | degC | 3 | — |
+| `L3.Load.Pct` | float | 0…100 | percent | 3 | — |
+| `L3.Alarm.Code` | uint16 | 0…999 | — | 5 | — |
+| `L3.Recipe.ID` | string | R1…R5 | — | 30 | SetRecipe(id) |
+
+Всего тегов: **21** (3 линии × 7), методов: **5**.
+<!-- END GENERATED -->
 
 ## 2. Поля реестра
 
