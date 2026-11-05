@@ -3,6 +3,16 @@
 База: `/api/v1`. Формат ошибок: `422/4xx {stage, code, detail}` (§5.2).
 Все временные метки — ISO 8601 UTC.
 
+## 0. Статус реализации (2026-11-05)
+
+| Реализовано на этапе 2 | Не реализовано (этап 4a+) |
+|---|---|
+| `POST /auth/login`, `GET /auth/me` | `POST /commands`, `GET /commands/{id}` |
+| `GET /equipment`, `GET /equipment/{id}/state` | `POST /commands/{id}/approve`, `/reject` |
+| `GET /tags/history` | `GET /orders/*`, `GET /commands` (список) |
+| `GET /health`, `GET /audit` | 7 PLANNED путей под 2D-панель (§5) |
+| `WS /ws` (subscribe, resume, ping) | `command_status`, `command_resolved` в WS |
+
 ## 1. Аутентификация
 
 | Метод | Путь | Тело | Ответ |
