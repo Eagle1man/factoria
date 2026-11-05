@@ -1,0 +1,19 @@
+[project]
+name = "factoria"
+version = "0.0.0"
+description = "FACTORIA & AI — мультиагентная система управления производством (этап 0: обследование)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "integration: требует запущенного эмулятора OPC UA",
+    "agent: требует DEEPSEEK_API_KEY и кассет",
+    "slow: длительные прогоны",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
