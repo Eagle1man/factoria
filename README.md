@@ -21,7 +21,10 @@
 | `opcua-emulator/` | эмулятор ПЛК (этап 1, не начат) |
 | `backend/` | FastAPI (этап 2, не начат) |
 | `agents/` | LangGraph + DeepSeek (этап 5, не начат) |
-| `frontend/` | 3D + 2D-панель (этап 3, не начат) |
+| `frontend/` | 3D + 2D-панель (этап 3, не начат); правила — `frontend/AGENTS.md` |
+| `DESIGN.md` | дизайн-система: цвета по ролям, типографика, компоненты, запреты |
+| `DESIGN.operator.md` | переопределение для пульта оператора |
+| `DESIGN.chat.md` | переопределение для чата с агентами и трасс |
 
 ## План B: без Docker
 
@@ -54,6 +57,30 @@ Dev-пользователи (создаются при `ENV=dev`): `operator` (
 `L1.StopLine`, `L1.ReallocateJob`.
 
 FUXA и InfluxDB отложены; витрина — HTML на `GET /api/v1/equipment/{id}/state`.
+
+## Интерфейс
+
+2D-панель и 3D-экран генерирует сам агент по дизайн-системе, без внешнего
+генератора (ADR-114, ТЗ §18):
+
+- `DESIGN.md` — база: YAML-токены по ролям, шкала типографики, сетка, компоненты,
+  состояния, запреты; `modes` — все маршруты в режиме `operate`;
+- `DESIGN.operator.md` — пульт: контраст 7:1, строки 44 px, кнопки 48 px, таймер TTL;
+- `DESIGN.chat.md` — чат и трассы: светлая тема, роли участников, evidence;
+- `DESIGN.vendor.linear.md`, `DESIGN.vendor.stripe-press.md` — внешние стили
+  как источник значений, не норма (проверены 2026-11-06, HTTP 200).
+
+Skill дизайн-суждения (MIT): `.agents/skills/gradientdeck`, версия 0.2.0,
+закоммичен. Переустановка при необходимости:
+
+```bash
+npx --yes gradientdeck@0.2.0 install
+npx --yes gradientdeck@0.2.0 doctor     # должен увидеть DESIGN.md
+python -m pytest tests/test_design_md.py -q
+```
+
+Правила применения — `frontend/AGENTS.md`. MCP-сервер каталога не подключается:
+`mcp.gradientdeck.com/mcp` отвечает 404 (проверено трижды).
 
 ## Границы безопасности
 
