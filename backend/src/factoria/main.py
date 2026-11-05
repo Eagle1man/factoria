@@ -47,6 +47,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             task = asyncio.create_task(client.run(), name="opcua-client")
         LOG.info("backend запущен: env=%s, опрос OPC UA=%s", settings.env, settings.opcua_enabled)
+        if settings.opcua_security == "None" and settings.env != "dev":
+            LOG.warning(
+                "OPC UA без шифрования (SecurityPolicy None) в среде %s: "
+                "до пилота включите Basic256Sha256 (docs/security/ot-baseline.md)",
+                settings.env,
+            )
         try:
             yield
         finally:
