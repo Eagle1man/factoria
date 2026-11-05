@@ -52,6 +52,35 @@ export interface AuditEvent {
   correlation_id: string | null
 }
 
+export interface ValidationStage {
+  stage: string
+  ok: boolean
+  code?: string | null
+  detail?: string | null
+}
+
+export interface CommandSummary {
+  command_id: string
+  type: string
+  line_id: string
+  status: string
+  autonomy_level: string
+  version: number
+  params: Record<string, unknown>
+  validation_trace: ValidationStage[]
+  expires_at: string | null
+  created_at: string | null
+}
+
+export interface Order {
+  order_id: string
+  product: string
+  qty: number
+  priority: 'low' | 'normal' | 'high'
+  due_date: string
+  spec_id: string
+}
+
 const TOKEN_KEY = 'factoria.token'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
 
@@ -110,4 +139,21 @@ export const api = {
   lineState: (line: string) =>
     request<{ line_id: string } & Snapshot>(`/api/v1/equipment/${line}/state`),
   audit: (limit = 50) => request<{ events: AuditEvent[]; count: number }>(`/api/v1/audit?limit=${limit}`),
+  commands: (status?: string) =>
+    request<{ commands: CommandSummary[]; count: number }>(
+      `/api/v1/commands${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+    ),
+  command: (id: string) => request<CommandSummary>(`/api/v1/commands/${id}`),
+  approve: (id: string, version: number, comment: string) =>
+    request<{ command_id: string; status: string; detail: string }>(
+      `/api/v1/commands/${id}/approve`,
+      { method: 'POST', body: JSON.stringify({ version, comment }) },
+    ),
+  reject: (id: string, version: number, reason: string) =>
+    request<{ command_id: string; status: string }>(`/api/v1/commands/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ version, reason }),
+    }),
+  orders: () => request<{ source: string; orders: Order[] }>('/api/v1/orders'),
+  order: (id: string) => request<Order>(`/api/v1/orders/${id}`),
 }

@@ -209,3 +209,37 @@ def test_debug_orders_disabled_outside_dev():
             headers=headers,
         )
         assert response.status_code == 404
+
+def test_expired_command_leaves_queue():
+    import asyncio
+    from datetime import datetime, timedelta, timezone
+
+    from factoria.storage.db import session_factory
+    from factoria.storage.models import Command
+
+    with make_client() as client:
+        headers = login(client)
+        command_id = client.post(
+            "/api/v1/commands", json=payload(), headers=headers
+        ).json()["command_id"]
+
+        async def expire() -> None:
+            async with session_factory() as session:
+                command = await session.get(Command, command_id)
+                command.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+                await session.commit()
+
+        asyncio.run(expire())
+
+        listed = client.get(
+            "/api/v1/commands?status=AWAITING_APPROVAL", headers=headers
+        ).json()
+        assert command_id not in [item["command_id"] for item in listed["commands"]]
+
+        detail = client.get(f"/api/v1/commands/{command_id}", headers=headers).json()
+        assert detail["status"] == "EXPIRED"
+
+        approve = client.post(
+            f"/api/v1/commands/{command_id}/approve", json={"version": 1}, headers=headers
+        )
+        assert approve.status_code == 409

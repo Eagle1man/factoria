@@ -16,7 +16,14 @@ BASE = "http://127.0.0.1:5173"
 API = "http://127.0.0.1:8000"
 OUT = Path(__file__).resolve().parent.parent / "docs" / "assessment" / "checks" / "shots"
 SIZES = [(1920, 1080), (1280, 800), (1024, 768)]
-PAGES = [("overview", "/"), ("production", "/production"), ("audit", "/audit"), ("settings", "/settings"), ("approvals", "/approvals")]
+PAGES = [
+    ("overview", "/"),
+    ("production", "/production"),
+    ("documents", "/documents"),
+    ("approvals", "/approvals"),
+    ("audit", "/audit"),
+    ("settings", "/settings"),
+]
 
 MEASURE = """
 () => {
@@ -74,6 +81,24 @@ def main() -> int:
         f"{API}/api/v1/auth/login", json={"username": "auditor", "password": "dev-password"}, timeout=10
     ).json()["access_token"]
 
+    headers = {"Authorization": f"Bearer {token}"}
+    pending = httpx.get(f"{API}/api/v1/commands?status=AWAITING_APPROVAL", headers=headers, timeout=10)
+    if pending.json().get("count", 0) == 0:
+        httpx.post(
+            f"{API}/api/v1/commands",
+            headers=headers,
+            timeout=10,
+            json={
+                "command_id": str(__import__("uuid").uuid4()),
+                "type": "set_setpoint",
+                "target": {"line_id": "L2"},
+                "params": {"setpoint_value": 300},
+                "requested_by": {"kind": "agent", "id": "production#sess-4a"},
+                "correlation_id": str(__import__("uuid").uuid4()),
+                "evidence": ["tool-call-17"],
+            },
+        )
+
     results: dict = {}
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="chrome", headless=True)
@@ -87,6 +112,19 @@ def main() -> int:
                 page.goto(f"{BASE}{path}", wait_until="networkidle")
                 page.evaluate("document.fonts.ready")
                 page.wait_for_timeout(1200)
+                if name == "approvals":
+                    item = page.query_selector(".queue-item")
+                    if item:
+                        item.click()
+                        page.wait_for_timeout(700)
+                if name == "documents":
+                    row = page.query_selector("table.data tbody tr")
+                    if row:
+                        row.click()
+                        page.wait_for_timeout(500)
+                        page.screenshot(path=str(OUT / f"documents-drawer_{width}.png"), full_page=True)
+                        page.keyboard.press("Escape")
+                        page.wait_for_timeout(300)
                 key = f"{name}_{width}"
                 page.screenshot(path=str(OUT / f"{key}.png"), full_page=True)
                 results[key] = page.evaluate(MEASURE)

@@ -6,6 +6,8 @@ import Overview from './pages/Overview'
 import Production from './pages/Production'
 import Audit from './pages/Audit'
 import Settings from './pages/Settings'
+import Approvals from './pages/Approvals'
+import Documents from './pages/Documents'
 import Stub from './pages/Stub'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -29,22 +31,7 @@ export default function App() {
         >
           <Route index element={<Overview />} />
           <Route path="production" element={<Production />} />
-          <Route
-            path="documents"
-            element={
-              <Stub
-                title="Документы 1С"
-                subtitle="Реестр заказов и документов · только чтение"
-                stage="этапе 4a"
-                items={[
-                  'Поиск по номеру и контрагенту',
-                  'Таблица заказов с приоритетом и сроком',
-                  'Карточка заказа с позициями и суммой',
-                  'Пометка «только чтение» на каждой карточке',
-                ]}
-              />
-            }
-          />
+          <Route path="documents" element={<Documents />} />
           <Route
             path="twin"
             element={
@@ -93,22 +80,7 @@ export default function App() {
               />
             }
           />
-          <Route
-            path="approvals"
-            element={
-              <Stub
-                title="Согласования"
-                subtitle="Очередь действий, требующих человека"
-                stage="этапе 4a"
-                items={[
-                  'Карточка: было → станет, риск, TTL',
-                  'Обязательный комментарий и чекбокс',
-                  'Кнопки «Согласовать» и «Отклонить» на расстоянии',
-                  'История решений по команде',
-                ]}
-              />
-            }
-          />
+          <Route path="approvals" element={<Approvals />} />
           <Route
             path="scene"
             element={

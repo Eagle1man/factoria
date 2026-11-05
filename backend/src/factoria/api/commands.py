@@ -85,6 +85,7 @@ def _command_dict(command: Command) -> dict:
         "status": command.status,
         "autonomy_level": command.autonomy_level,
         "version": command.version,
+        "params": json.loads(command.params),
         "validation_trace": json.loads(command.validation_trace),
         "expires_at": _aware(command.expires_at).isoformat() if command.expires_at else None,
         "created_at": _aware(command.created_at).isoformat() if command.created_at else None,
@@ -189,6 +190,19 @@ async def list_commands(
     if status_filter:
         stmt = stmt.where(Command.status == status_filter)
     rows = (await session.execute(stmt)).scalars().all()
+
+    # TTL: истёкшие карточки не должны висеть в очереди (ТЗ §5.1, §6.6).
+    now = _now()
+    changed = False
+    for row in rows:
+        expires = _aware(row.expires_at)
+        if row.status == "AWAITING_APPROVAL" and expires is not None and expires < now:
+            row.status = "EXPIRED"
+            changed = True
+    if changed:
+        await session.commit()
+        rows = [row for row in rows if not (status_filter and row.status != status_filter)]
+
     return {"commands": [_command_dict(row) for row in rows], "count": len(rows)}
 
 
