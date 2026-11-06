@@ -15,6 +15,9 @@ dist/
 data/*.db
 data/*.db-*
 *.sqlite3
+data/1c-backup-*/
+data/1c-dump/
+data/1c-strings.txt
 
 # Node
 node_modules/
