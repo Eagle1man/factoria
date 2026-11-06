@@ -12,6 +12,7 @@
 | `POST /commands`, `GET /commands`, `GET /commands/{id}` | `command_status` / `command_resolved` в WS |
 | `POST /commands/{id}/approve`, `/reject` (A1, TTL 5 мин) | уведомление оператору при A2 |
 | `GET /orders`, `GET /orders/{id}`, `POST /debug/orders` (только dev) | HTTP-сервисы 1С (этап 4b) |
+| `GET /twin` (структура, покрытие, свежесть) | история версий двойника |
 | `GET /health`, `GET /audit`, `WS /ws` | |
 
 Команды исполняются через method-ноды эмулятора: `set_setpoint → SetSpeed`,

@@ -43,6 +43,7 @@ PAGES = [
     ("overview", "/"),
     ("production", "/production"),
     ("documents", "/documents"),
+    ("twin", "/twin"),
     ("approvals", "/approvals"),
     ("audit", "/audit"),
     ("settings", "/settings"),

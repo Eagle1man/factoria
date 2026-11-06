@@ -9,6 +9,7 @@ import Audit from './pages/Audit'
 import Settings from './pages/Settings'
 import Approvals from './pages/Approvals'
 import Documents from './pages/Documents'
+import TwinPage from './pages/Twin'
 import Stub from './pages/Stub'
 
 const Scene = lazy(() => import('./pages/Scene'))
@@ -35,22 +36,7 @@ export default function App() {
           <Route index element={<Overview />} />
           <Route path="production" element={<Production />} />
           <Route path="documents" element={<Documents />} />
-          <Route
-            path="twin"
-            element={
-              <Stub
-                title="Цифровой двойник"
-                subtitle="Версия модели, точность, покрытие"
-                stage="этапе 2 модели данных"
-                items={[
-                  'Статус EXPERIMENTAL и дата сборки',
-                  'Метрики точности и покрытия по линиям',
-                  'Сущности и связи семантической модели',
-                  'Предупреждения о расхождении с фактом',
-                ]}
-              />
-            }
-          />
+          <Route path="twin" element={<TwinPage />} />
           <Route
             path="experiments"
             element={

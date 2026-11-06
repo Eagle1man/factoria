@@ -81,6 +81,42 @@ export interface Order {
   spec_id: string
 }
 
+export interface TwinEntity {
+  id: string
+  kind: string
+  name: string
+  attributes: Record<string, unknown>
+}
+
+export interface TwinRelation {
+  from: string
+  to: string
+  type: string
+}
+
+export interface Twin {
+  version: string
+  status: string
+  built_at: string
+  basis: {
+    registry_version: number
+    tags: number
+    lines: number
+    orders: number
+    snapshot_seq: number
+  }
+  metrics: {
+    coverage_pct: number
+    tags_good: number
+    tags_total: number
+    freshness_sec: number | null
+    accuracy: number | null
+  }
+  entities: TwinEntity[]
+  relations: TwinRelation[]
+  warnings: string[]
+}
+
 const TOKEN_KEY = 'factoria.token'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
 
@@ -156,4 +192,5 @@ export const api = {
     }),
   orders: () => request<{ source: string; orders: Order[] }>('/api/v1/orders'),
   order: (id: string) => request<Order>(`/api/v1/orders/${id}`),
+  twin: () => request<Twin>('/api/v1/twin'),
 }
