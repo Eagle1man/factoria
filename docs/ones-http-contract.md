@@ -15,13 +15,13 @@
 Публикация (делает человек, не агент):
 
 ```
-"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" ^
-  -deploy ^
-  -wsdir mfg ^
-  -dir C:\inetpub\wwwroot\mfg ^
-  -connstr "File=C:\1c_bases\DemoAgent;" ^
-  -confpath C:\inetpub\wwwroot\mfg\default.vrd
+"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" -publish -iis ^
+  -wsdir mfg -dir C:\inetpub\wwwroot\mfg ^
+  -connstr "File=C:\1c_bases\DemoAgent;" -osauth
 ```
+
+`-confPath` предназначен только для Apache; для IIS файл `default.vrd`
+создаётся в `-dir` автоматически.
 
 Проверка: `GET http://localhost/mfg/hs/mfg/orders/open` должен вернуть JSON,
 а не HTML-страницу ошибки.

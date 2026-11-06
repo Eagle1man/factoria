@@ -29,11 +29,14 @@
 6. Опубликовать:
 
 ```
-"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" ^
-  -deploy -wsdir mfg -dir C:\inetpub\wwwroot\mfg ^
-  -connstr "File=C:\1c_bases\DemoAgent;" ^
-  -confpath C:\inetpub\wwwroot\mfg\default.vrd
+"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" -publish -iis ^
+  -wsdir mfg -dir C:\inetpub\wwwroot\mfg ^
+  -connstr "File=C:\1c_bases\DemoAgent;" -osauth
 ```
+
+Проверка синтаксиса взята из справки самого `webinstt.exe`:
+`webinst [-publish] -iis -wsdir <VirtualDir> -dir <Dir> -connstr <ConnStr> [-osauth]`.
+Ключа `-deploy` у утилиты нет.
 
 7. Создать пользователя 1С с правами **только чтение** и выдать его логин.
 8. Прописать в `.env`:

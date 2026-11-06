@@ -117,3 +117,20 @@ python -m pytest -q
 Вывод: оба пути к реальной 1С требуют одного действия с правами администратора.
 Код готов к обоим: `ONES_MODE=odata` (без правки конфигурации) и `ONES_MODE=http`
 (HTTP-сервис в расширении).
+
+## 12. Исправление команды публикации (2026-11-07)
+
+Первая команда с `-deploy` была неверной: `webinstt.exe` ответил
+«Неизвестный параметр командной строки: -deploy».
+
+Справка утилиты: `webinst [-publish] websrv -wsdir VirtualDir -dir Dir
+-connstr connStr [-confPath confPath] [-osauth]`, где `websrv` — это `-iis`
+или `-apache2/22/24`. `-confPath` относится только к Apache.
+
+Рабочая команда:
+
+```
+"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" -publish -iis ^
+  -wsdir mfg -dir C:\inetpub\wwwroot\mfg ^
+  -connstr "File=C:\1c_bases\DemoAgent;" -osauth
+```
