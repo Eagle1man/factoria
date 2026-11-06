@@ -54,6 +54,13 @@ export default function Documents() {
         <Badge tone="info">режим чтения</Badge>
       </div>
 
+      {source === 'stub' && (
+        <div className="notice-demo">
+          Демонстрационные данные: stub-адаптер, а не выгрузка 1С. Реальные документы
+          появятся после подключения базы (этап 4b).
+        </div>
+      )}
+
       <Panel
         title="Открытые заказы"
         hint={source === 'stub' ? 'демо-данные stub-адаптера, не выгрузка 1С' : 'из 1С по HTTP-сервису'}

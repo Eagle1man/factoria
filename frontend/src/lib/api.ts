@@ -117,6 +117,20 @@ export interface Twin {
   warnings: string[]
 }
 
+export interface TwinVersion {
+  id: number
+  version: string
+  built_at: string | null
+  status: string
+  coverage_pct: number
+  tags_good: number
+  tags_total: number
+  freshness_sec: number | null
+  snapshot_seq: number
+  warnings: string[]
+  delta: { coverage_pct: number | null; tags_good: number | null }
+}
+
 const TOKEN_KEY = 'factoria.token'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
 
@@ -193,4 +207,7 @@ export const api = {
   orders: () => request<{ source: string; orders: Order[] }>('/api/v1/orders'),
   order: (id: string) => request<Order>(`/api/v1/orders/${id}`),
   twin: () => request<Twin>('/api/v1/twin'),
+  twinHistory: (limit = 20) =>
+    request<{ versions: TwinVersion[]; count: number }>(`/api/v1/twin/history?limit=${limit}`),
+  twinSnapshot: () => request<TwinVersion>('/api/v1/twin/snapshot', { method: 'POST' }),
 }

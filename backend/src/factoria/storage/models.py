@@ -93,3 +93,18 @@ class TagHistory(Base):
     quality: Mapped[str] = mapped_column(String(8), default="GOOD")
 
     __table_args__ = (UniqueConstraint("ts", "tag", name="uq_tag_history_ts_tag"),)
+
+
+class TwinVersion(Base):
+    __tablename__ = "twin_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    version: Mapped[str] = mapped_column(String(32), index=True)
+    built_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    status: Mapped[str] = mapped_column(String(16), default="EXPERIMENTAL")
+    coverage_pct: Mapped[float] = mapped_column(Float)
+    tags_good: Mapped[int] = mapped_column(Integer)
+    tags_total: Mapped[int] = mapped_column(Integer)
+    freshness_sec: Mapped[float | None] = mapped_column(Float, nullable=True)
+    snapshot_seq: Mapped[int] = mapped_column(Integer, default=0)
+    warnings: Mapped[str] = mapped_column(Text, default="[]")

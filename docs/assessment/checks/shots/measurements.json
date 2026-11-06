@@ -44,7 +44,7 @@
   "audit-ok_1280": {
     "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
     "font_size": "13px",
-    "row_height": 36,
+    "row_height": 38,
     "muted_contrast": 6.05,
     "ink_contrast": 14.57,
     "doc_width": 1280,

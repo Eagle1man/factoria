@@ -607,6 +607,19 @@ table.data tbody tr:hover {
   font-size: 14px;
 }
 
+.notice-demo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-4);
+  border: 1px dashed var(--warning);
+  border-radius: var(--r-md);
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 12px;
+}
+
 .drawer-backdrop {
   position: fixed;
   inset: 0;

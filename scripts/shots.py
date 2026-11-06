@@ -107,6 +107,11 @@ def main() -> int:
     ).json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
+    for _ in range(2):
+        try:
+            httpx.post(f"{API}/api/v1/twin/snapshot", headers=headers, timeout=10)
+        except httpx.HTTPError:
+            pass
     pending = httpx.get(f"{API}/api/v1/commands?status=AWAITING_APPROVAL", headers=headers, timeout=10)
     if pending.json().get("count", 0) == 0:
         httpx.post(

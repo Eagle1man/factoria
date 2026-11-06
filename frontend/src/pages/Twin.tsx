@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type EquipmentResponse, type Twin } from '../lib/api'
+import { api, type EquipmentResponse, type Twin, type TwinVersion } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import {
   Badge,
   ErrorState,
@@ -20,19 +21,37 @@ const KIND_LABEL: Record<string, string> = {
 }
 
 export default function TwinPage() {
+  const { role } = useAuth()
   const [twin, setTwin] = useState<Twin | null>(null)
   const [equipment, setEquipment] = useState<EquipmentResponse | null>(null)
+  const [history, setHistory] = useState<TwinVersion[]>([])
   const [error, setError] = useState<unknown>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
-    Promise.all([api.twin(), api.equipment()])
-      .then(([twinData, equipmentData]) => {
+    Promise.all([api.twin(), api.equipment(), api.twinHistory(10)])
+      .then(([twinData, equipmentData, historyData]) => {
         setTwin(twinData)
         setEquipment(equipmentData)
+        setHistory(historyData.versions)
         setError(null)
       })
       .catch(setError)
   }, [])
+
+  async function snapshot() {
+    setBusy(true)
+    try {
+      await api.twinSnapshot()
+      load()
+    } catch (problem) {
+      setError(problem)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const canSnapshot = role === 'production_specialist' || role === 'technologist'
 
   useEffect(() => {
     load()
@@ -163,6 +182,66 @@ export default function TwinPage() {
           Двойник — детерминированное представление реестра и кэша, а не обученная модель.
           Точность скрыта намеренно: для неё нужен валидированный набор исторических данных.
         </div>
+      </Panel>
+
+      <Panel
+        title="История срезов"
+        hint="каждый срез — факт на момент времени, без ретроспективных правок"
+        actions={
+          canSnapshot ? (
+            <button className="btn btn-secondary" onClick={snapshot} disabled={busy}>
+              {busy ? 'Снимаю…' : 'Снять срез'}
+            </button>
+          ) : null
+        }
+      >
+        {history.length === 0 ? (
+          <div className="muted" style={{ fontSize: 12 }}>
+            Срезов пока нет. Нажмите «Снять срез», чтобы зафиксировать текущее качество данных.
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Версия</th>
+                  <th className="num">Покрытие, %</th>
+                  <th className="num">Сигналов</th>
+                  <th className="num">Δ покрытия</th>
+                  <th className="num">Δ сигналов</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((item) => {
+                  const delta = item.delta.coverage_pct
+                  const tone =
+                    delta === null ? undefined : delta > 0 ? 'var(--success)' : delta < 0 ? 'var(--danger)' : 'var(--ink-muted)'
+                  return (
+                    <tr key={item.id}>
+                      <td className="mono">
+                        {item.built_at ? formatTime(item.built_at) : '—'}
+                      </td>
+                      <td className="mono faint">{item.version}</td>
+                      <td className="num">{formatNumber(item.coverage_pct, 1)}</td>
+                      <td className="num">
+                        {item.tags_good} / {item.tags_total}
+                      </td>
+                      <td className="num" style={tone ? { color: tone } : undefined}>
+                        {delta === null ? '—' : `${delta > 0 ? '+' : ''}${formatNumber(delta, 2)}`}
+                      </td>
+                      <td className="num muted">
+                        {item.delta.tags_good === null
+                          ? '—'
+                          : `${item.delta.tags_good > 0 ? '+' : ''}${item.delta.tags_good}`}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Panel>
     </>
   )
