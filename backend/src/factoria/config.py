@@ -43,10 +43,10 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET=dev-secret-change-me запрещён при ENV != dev")
         if self.autonomy_max not in {"A1", "A2"}:
             raise ValueError("AUTONOMY_MAX должен быть A1 или A2")
-        if self.ones_mode not in {"stub", "http"}:
-            raise ValueError("ONES_MODE должен быть stub или http")
-        if self.ones_mode == "http" and not self.ones_http_url:
-            raise ValueError("ONES_MODE=http требует ONES_HTTP_URL")
+        if self.ones_mode not in {"stub", "http", "odata"}:
+            raise ValueError("ONES_MODE должен быть stub, http или odata")
+        if self.ones_mode in {"http", "odata"} and not self.ones_http_url:
+            raise ValueError("ONES_MODE=http|odata требует ONES_HTTP_URL")
         if self.tag_history_retention_h <= 0:
             raise ValueError("TAG_HISTORY_RETENTION_H должен быть > 0")
 

@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Base = "C:\1c_bases\DemoAgent",
     [string]$Out = "D:\factoria\data\1c-dump",
     [string]$Bin = "C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\1cv8t.exe"
@@ -31,7 +31,7 @@ if (Test-Path -LiteralPath $Out) { Remove-Item -LiteralPath $Out -Recurse -Force
 $log = "$Out.log"
 if (Test-Path -LiteralPath $log) { Remove-Item -LiteralPath $log -Force }
 
-$args = @(
+$arguments = @(
     "DESIGNER",
     "/F`"$Base`"",
     "/DumpConfigToFiles`"$Out`"",
@@ -39,7 +39,7 @@ $args = @(
     "/DisableStartupDialogs"
 )
 
-$process = Start-Process -FilePath $Bin -ArgumentList $args -PassThru -WindowStyle Hidden
+$process = Start-Process -FilePath $Bin -ArgumentList $arguments -PassThru -WindowStyle Hidden
 if (-not $process.WaitForExit(180000)) {
     Stop-Process -Id $process.Id -Force
     Write-Host "Таймаут выгрузки" -ForegroundColor Red

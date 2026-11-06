@@ -85,3 +85,53 @@ Basic-аутентификация пользователя 1С с правам�
 
 До пункта 5 backend работает с `ONES_MODE=stub` и честно помечает данные
 как демонстрационные.
+
+## 6. OData — путь без правки конфигурации (v1)
+
+Публикация базы включает стандартный интерфейс OData, и данные читаются
+без расширения и без BSL.
+
+**URL:** `http://<host>/mfg/odata/standard.odata`
+**Сущность демо-базы:** `Document_РеализацияТоваровУслуг`
+**Запрос:**
+
+```
+GET /mfg/odata/standard.odata/Document_РеализацияТоваровУслуг
+    ?$format=json&$top=50&$orderby=Date desc&$expand=Контрагент
+```
+
+**Маппинг в контракт заказа (демо-решение, не свойство 1С):**
+
+| Поле заказа | Источник |
+|---|---|
+| order_id | `Number` |
+| product | `Контрагент.Description` |
+| qty | сумма `Товары.Количество` |
+| due_date | дата `Date` без времени |
+| spec_id | `РеализацияТоваровУслуг` (тип документа) |
+| priority | всегда `normal` |
+
+Важно: в DemoAgent **нет документа заказов**, есть продажи. Поэтому
+`spec_id` показывает реальный тип документа, а не выдаёт продажи за заказ.
+
+**Публикация (нужен администратор):**
+
+```
+"C:\Program Files (x86)\1cv8t\8.3.27.1508\bin\webinstt.exe" ^
+  -deploy -wsdir mfg -dir C:\inetpub\wwwroot\mfg ^
+  -connstr "File=C:\1c_bases\DemoAgent;" ^
+  -confpath C:\inetpub\wwwroot\mfg\default.vrd
+```
+
+После публикации в свойствах публикации включить «Стандартный интерфейс OData».
+
+**Настройки backend:**
+
+```
+ONES_MODE=odata
+ONES_HTTP_URL=http://localhost/mfg/odata/standard.odata
+ONES_HTTP_USER=<пользователь 1С>
+ONES_HTTP_PASSWORD=<пароль>
+```
+
+**Проверка:** `GET /api/v1/orders` → `"source": "odata"`.

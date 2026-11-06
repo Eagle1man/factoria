@@ -14,6 +14,7 @@ from factoria.api import state as state_api
 from factoria.api import system as system_api
 from factoria.api import twin as twin_api
 from factoria.adapters.http_ones import HttpOnesAdapter
+from factoria.adapters.odata_ones import ODataOnesAdapter
 from factoria.adapters.stub import StubAdapter
 from factoria.config import Settings, get_settings
 from factoria.opcua.client import OpcuaClient
@@ -29,6 +30,12 @@ LOG = logging.getLogger("app")
 
 
 def build_ones(settings):
+    if settings.ones_mode == "odata":
+        return ODataOnesAdapter(
+            settings.ones_http_url,
+            settings.ones_http_user or None,
+            settings.ones_http_password or None,
+        )
     if settings.ones_mode == "http":
         return HttpOnesAdapter(
             settings.ones_http_url,
