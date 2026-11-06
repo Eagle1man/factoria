@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     allowed_write_targets: str = "L1,L2,L3"
     allow_external_api: bool = False
     ones_mode: str = "stub"
+    ones_http_url: str = ""
+    ones_http_user: str = ""
+    ones_http_password: str = ""
 
     @model_validator(mode="after")
     def _guard(self) -> "Settings":
@@ -40,6 +43,10 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET=dev-secret-change-me запрещён при ENV != dev")
         if self.autonomy_max not in {"A1", "A2"}:
             raise ValueError("AUTONOMY_MAX должен быть A1 или A2")
+        if self.ones_mode not in {"stub", "http"}:
+            raise ValueError("ONES_MODE должен быть stub или http")
+        if self.ones_mode == "http" and not self.ones_http_url:
+            raise ValueError("ONES_MODE=http требует ONES_HTTP_URL")
         if self.tag_history_retention_h <= 0:
             raise ValueError("TAG_HISTORY_RETENTION_H должен быть > 0")
 

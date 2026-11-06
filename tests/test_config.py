@@ -46,3 +46,15 @@ def test_bad_autonomy_rejected():
 def test_retention_must_be_positive():
     with pytest.raises(ValidationError):
         Settings(env="dev", tag_history_retention_h=0)
+
+def test_ones_http_requires_url():
+    with pytest.raises(ValidationError) as error:
+        Settings(env="test", ones_mode="http")
+    assert "ONES_HTTP_URL" in str(error.value)
+
+
+def test_ones_mode_validated():
+    with pytest.raises(ValidationError):
+        Settings(env="test", ones_mode="ftp")
+    settings = Settings(env="test", ones_mode="http", ones_http_url="http://localhost/mfg/hs")
+    assert settings.ones_mode == "http"
