@@ -61,8 +61,9 @@ python scripts/smoke_stage6.py      # A2 и WS-события
 - Локальный аналог: `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`.
 - Job `visual`: поднимает контур, снимает скриншоты, падает при переполнении,
   выгружает артефакт.
-- HTTPS для API: `scripts/gen_certs.py` + `scripts/run_backend_https.ps1`;
-  OPC UA TLS не включён (см. `report-tls-ci.md`).
+- HTTPS для API: `scripts/gen_certs.py` + `scripts/run_backend_https.ps1`.
+- OPC UA TLS: `Basic256Sha256_SignAndEncrypt`, проверен интеграционным тестом
+  (`tests/test_opcua_tls.py`).
 - Покрытие backend: **91 %** (`docs/assessment/checks/coverage.txt`).
 - Линтер: `ruff check backend tests scripts` — без замечаний.
 

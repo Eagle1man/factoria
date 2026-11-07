@@ -61,8 +61,18 @@ def _unwrap(value):
 
 
 class Emulator:
-    def __init__(self, endpoint: str = ENDPOINT) -> None:
+    def __init__(
+        self,
+        endpoint: str = ENDPOINT,
+        *,
+        security: str | None = None,
+        cert: str | None = None,
+        key: str | None = None,
+    ) -> None:
         self.endpoint = endpoint
+        self.security = security
+        self.cert = cert
+        self.key = key
         self.registry = load_registry()
         self.lines = build_lines(self.registry)
         self.server = Server()
@@ -73,8 +83,17 @@ class Emulator:
 
     async def setup(self) -> None:
         await self.server.init()
+        if self.security:
+            await self.server.set_application_uri("urn:factoria:server")
         self.server.set_endpoint(self.endpoint)
         self.server.set_server_name("FACTORIA OPC UA emulator")
+        if self.security:
+            if not self.cert or not self.key:
+                raise RuntimeError("OPCUA_SECURITY задан, но нет OPCUA_CERT/OPCUA_KEY")
+            # ВАЖНО: load_certificate грузит только сертификат, ключ — отдельно.
+            await self.server.load_certificate(self.cert)
+            await self.server.load_private_key(self.key)
+            self.server.set_security_policy([getattr(ua.SecurityPolicyType, self.security)])
         self.namespace = await self.server.register_namespace(self.registry.namespace)
 
         for line_id, state in self.lines.items():
@@ -180,8 +199,16 @@ def main() -> int:
     parser.add_argument("--seconds", type=float, default=None, help="остановиться через N секунд")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
+    security = os.environ.get("OPCUA_SECURITY", "None")
+    security = None if security in {"", "None", "none"} else security
+    emulator = Emulator(
+        security=security,
+        cert=os.environ.get("OPCUA_CERT"),
+        key=os.environ.get("OPCUA_KEY"),
+    )
     try:
-        asyncio.run(Emulator().run(args.seconds))
+        asyncio.run(emulator.run(args.seconds))
     except KeyboardInterrupt:
         LOG.info("остановлен пользователем")
     return 0

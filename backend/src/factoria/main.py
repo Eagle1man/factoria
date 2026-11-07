@@ -69,6 +69,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 endpoint=settings.opcua_endpoint,
                 namespace=registry.namespace,
                 tags=tuple(t.id for t in registry.tags),
+                security=settings.opcua_security,
+                client_cert=settings.opcua_client_cert,
+                client_key=settings.opcua_client_key,
+                server_cert=settings.opcua_server_cert,
             )
             task = asyncio.create_task(client.run(), name="opcua-client")
 

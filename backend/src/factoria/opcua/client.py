@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timezone
 
 from asyncua import Client, ua
+from asyncua.crypto.security_policies import SecurityPolicyBasic256Sha256
 
 from factoria.realtime.cache import BAD, GOOD, TagCache
 
@@ -28,6 +29,10 @@ class OpcuaClient:
         namespace: str,
         tags: tuple[str, ...],
         interval_s: float = 0.5,
+        security: str = "None",
+        client_cert: str = "",
+        client_key: str = "",
+        server_cert: str = "",
     ) -> None:
         self.cache = cache
         self.history = history
@@ -35,6 +40,10 @@ class OpcuaClient:
         self.namespace = namespace
         self.tags = tags
         self.interval_s = interval_s
+        self.security = security
+        self.client_cert = client_cert
+        self.client_key = client_key
+        self.server_cert = server_cert
 
     async def run(self) -> None:
         attempt = 0
@@ -52,7 +61,21 @@ class OpcuaClient:
                 await asyncio.sleep(delay)
 
     async def _watch(self) -> None:
-        async with Client(self.endpoint) as client:
+        client = Client(self.endpoint)
+        if self.security and self.security != "None":
+            mode = (
+                ua.MessageSecurityMode.Sign
+                if self.security == "Basic256Sha256_Sign"
+                else ua.MessageSecurityMode.SignAndEncrypt
+            )
+            await client.set_security(
+                SecurityPolicyBasic256Sha256,
+                self.client_cert,
+                self.client_key,
+                server_certificate=self.server_cert,
+                mode=mode,
+            )
+        async with client:
             index = await client.get_namespace_index(self.namespace)
             nodes = [client.get_node(f"ns={index};s={tag}") for tag in self.tags]
             self.cache.mark_source_up()

@@ -51,9 +51,16 @@ powershell -ExecutionPolicy Bypass -File scripts/run_backend_https.ps1
 # https://127.0.0.1:8443/api/v1/health (сертификат самоподписанный)
 ```
 
-Сертификаты лежат в `certs/` и не коммитятся. OPC UA TLS пока не включён:
-спайк на asyncua 2.1 / Python 3.14 зависает на `SecureOpen`
-(`docs/assessment/report-tls-ci.md`).
+Сертификаты лежат в `certs/` и не коммитятся.
+
+OPC UA TLS включается переменными окружения (сертификаты создаёт тот же скрипт):
+
+```powershell
+$env:OPCUA_SECURITY="Basic256Sha256_SignAndEncrypt"
+$env:OPCUA_CERT="D:\factoria\certs\opcua-server.cert.der"
+$env:OPCUA_KEY="D:\factoria\certs\opcua-server.key.der"
+# backend: OPCUA_CLIENT_CERT, OPCUA_CLIENT_KEY, OPCUA_SERVER_CERT
+```
 
 ## Проверки
 

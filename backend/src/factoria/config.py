@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     opcua_endpoint: str = "opc.tcp://localhost:48400"
     opcua_enabled: bool = True
     opcua_security: str = "None"
+    opcua_client_cert: str = ""
+    opcua_client_key: str = ""
+    opcua_server_cert: str = ""
     opcua_allow_remote: bool = False
     opcua_fallback_port: int = 48400
 
@@ -58,6 +61,14 @@ class Settings(BaseSettings):
             raise ValueError("TAG_HISTORY_RETENTION_H должен быть > 0")
         if self.twin_snapshot_minutes < 0:
             raise ValueError("TWIN_SNAPSHOT_MINUTES не может быть отрицательным")
+        if self.opcua_security not in {"None", "Basic256Sha256_Sign", "Basic256Sha256_SignAndEncrypt"}:
+            raise ValueError("OPCUA_SECURITY: None или Basic256Sha256_Sign[_AndEncrypt]")
+        if self.opcua_security != "None" and not (
+            self.opcua_client_cert and self.opcua_client_key and self.opcua_server_cert
+        ):
+            raise ValueError(
+                "OPCUA_SECURITY требует OPCUA_CLIENT_CERT, OPCUA_CLIENT_KEY и OPCUA_SERVER_CERT"
+            )
 
         host = (urlparse(self.opcua_endpoint).hostname or "").lower()
         if host not in {"localhost", "127.0.0.1", "::1"} and not self.opcua_allow_remote:
