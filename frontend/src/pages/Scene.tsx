@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Grid, OrbitControls } from '@react-three/drei'
+import { ContactShadows, Environment, Grid, Lightformer, OrbitControls } from '@react-three/drei'
 import { getToken } from '../lib/api'
 import { useTags, qualityOf } from '../lib/stream'
 import { Badge, ErrorState, Panel, QualityBadge, SkeletonRows } from '../components/ui'
@@ -8,9 +8,9 @@ import LineModel from '../scene/LineModel'
 
 const LINES: Array<'L1' | 'L2' | 'L3'> = ['L1', 'L2', 'L3']
 const POSITIONS: Record<string, [number, number, number]> = {
-  L1: [-3.6, 0, 0],
+  L1: [-3.05, 0, 0],
   L2: [0, 0, 0],
-  L3: [3.6, 0, 0],
+  L3: [3.05, 0, 0],
 }
 
 function webglAvailable(): boolean {
@@ -51,16 +51,45 @@ export default function Scene() {
       ) : (
         <div className="scene-layout">
           <div className="scene-canvas">
-            <Canvas camera={{ position: [0, 3.8, 8.4], fov: 40 }} dpr={[1, 2]} shadows>
+            <Canvas
+              camera={{ position: [0, 2.8, 8.6], fov: 42 }}
+              dpr={[1, 2]}
+              shadows
+              gl={{ antialias: true }}
+            >
               <color attach="background" args={['#0b1117']} />
-              <hemisphereLight args={['#9fb6cc', '#0b1117', 0.75]} />
-              <ambientLight intensity={0.35} />
-              <directionalLight position={[6, 10, 6]} intensity={2.0} castShadow />
-              <directionalLight position={[-6, 6, -4]} intensity={0.5} />
+              <hemisphereLight args={['#9fb6cc', '#0b1117', 0.5]} />
+              <ambientLight intensity={0.25} />
+              <directionalLight
+                position={[5, 9, 5]}
+                intensity={3.0}
+                castShadow
+                shadow-mapSize={[2048, 2048]}
+                shadow-bias={-0.0005}
+              />
+              <directionalLight position={[-7, 5, -4]} intensity={0.8} color="#7fa6c9" />
+              <directionalLight position={[0, 4, -8]} intensity={0.9} color="#3ea6ff" />
+
+              <Environment resolution={128} frames={1}>
+                <Lightformer intensity={2.2} position={[0, 5, 2]} scale={[8, 3, 1]} color="#cfe3f5" />
+                <Lightformer intensity={1.2} position={[-5, 2, 3]} scale={[4, 2, 1]} color="#8fb6d9" />
+                <Lightformer intensity={0.8} position={[5, 3, -3]} scale={[4, 2, 1]} color="#3e6f96" />
+              </Environment>
+
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-                <planeGeometry args={[36, 36]} />
+                <planeGeometry args={[40, 40]} />
                 <meshStandardMaterial color="#0e1720" roughness={1} metalness={0} />
               </mesh>
+
+              <ContactShadows
+                position={[0, 0.005, 0]}
+                opacity={0.55}
+                scale={24}
+                blur={2.2}
+                far={5}
+                resolution={512}
+                color="#000000"
+              />
 
               <Suspense fallback={null}>
                 {LINES.map((line) => (
@@ -82,10 +111,10 @@ export default function Scene() {
               </Suspense>
 
               <OrbitControls
-                target={[0, 0.8, 0]}
+                target={[0, 1.05, 0]}
                 enablePan={false}
                 minDistance={4}
-                maxDistance={16}
+                maxDistance={14}
                 maxPolarAngle={Math.PI / 2.05}
               />
             </Canvas>
