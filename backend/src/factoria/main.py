@@ -25,6 +25,7 @@ from factoria.realtime.ws import router as ws_router
 from factoria.seed import ensure_dev_users
 from factoria.storage.db import create_all
 from factoria.tags.registry import load_registry
+from factoria.twin_scheduler import snapshot_loop
 
 LOG = logging.getLogger("app")
 
@@ -69,6 +70,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 tags=tuple(t.id for t in registry.tags),
             )
             task = asyncio.create_task(client.run(), name="opcua-client")
+
+        twin_task: asyncio.Task | None = None
+        if settings.twin_snapshot_minutes > 0 and settings.env in {"dev", "pilot"}:
+            twin_task = asyncio.create_task(
+                snapshot_loop(
+                    registry,
+                    cache,
+                    app.state.ones,
+                    settings.twin_snapshot_minutes * 60,
+                ),
+                name="twin-snapshots",
+            )
+            LOG.info("снимки двойника каждые %s мин", settings.twin_snapshot_minutes)
+
         LOG.info("backend запущен: env=%s, опрос OPC UA=%s", settings.env, settings.opcua_enabled)
         if settings.opcua_security == "None" and settings.env != "dev":
             LOG.warning(
@@ -79,12 +94,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
-            if task is not None:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
+            for background in (task, twin_task):
+                if background is not None:
+                    background.cancel()
+                    try:
+                        await background
+                    except asyncio.CancelledError:
+                        pass
             await writer.stop()
 
     app = FastAPI(title="FACTORIA & AI", version="0.2.0", lifespan=lifespan)

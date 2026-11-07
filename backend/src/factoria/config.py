@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./data/factoria.db"
     tag_history_retention_h: int = 72
+    twin_snapshot_minutes: int = 15
 
     autonomy_max: str = "A1"
     allowed_write_targets: str = "L1,L2,L3"
@@ -49,6 +50,8 @@ class Settings(BaseSettings):
             raise ValueError("ONES_MODE=http|odata требует ONES_HTTP_URL")
         if self.tag_history_retention_h <= 0:
             raise ValueError("TAG_HISTORY_RETENTION_H должен быть > 0")
+        if self.twin_snapshot_minutes < 0:
+            raise ValueError("TWIN_SNAPSHOT_MINUTES не может быть отрицательным")
 
         host = (urlparse(self.opcua_endpoint).hostname or "").lower()
         if host not in {"localhost", "127.0.0.1", "::1"} and not self.opcua_allow_remote:
