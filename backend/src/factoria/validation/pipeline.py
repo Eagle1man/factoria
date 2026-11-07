@@ -8,7 +8,7 @@ from typing import Any, Callable
 
 import yaml
 
-from factoria.contract.loader import CommandSpec, Contract
+from factoria.contract.loader import Contract
 from factoria.validation.autonomy import resolve_autonomy
 
 INTERLOCKS_PATH = Path(__file__).with_name("interlocks.yaml")
@@ -85,7 +85,7 @@ def validate_command(
 
     # --- 1. schema_check -------------------------------------------------
     try:
-        spec: CommandSpec = contract.spec(command_type)
+        contract.spec(command_type)
         contract.param_model(command_type).model_validate(params)
         trace.append(Stage("schema_check", True))
     except Exception as exc:  # noqa: BLE001 - любая ошибка схемы = SCHEMA_001

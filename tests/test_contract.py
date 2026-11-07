@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from factoria.contract.loader import ContractError, get_contract, validate_envelope
+from pydantic import ValidationError
 
 
 def test_contract_has_five_commands():

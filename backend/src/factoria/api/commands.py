@@ -285,7 +285,6 @@ async def approve_command(
     if body.version != command.version:
         raise HTTPException(status.HTTP_409_CONFLICT, detail="версия устарела, обновите карточку")
 
-    settings = request.app.state.settings
     command.status = "DISPATCHING"
     command.version += 1
     await session.commit()

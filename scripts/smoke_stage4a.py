@@ -1,5 +1,4 @@
 """Дымовой тест этапа 4a: команда → подтверждение → исполнение → аудит."""
-import json
 import sys
 from uuid import uuid4
 

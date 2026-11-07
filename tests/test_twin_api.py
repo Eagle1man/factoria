@@ -3,13 +3,12 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi.testclient import TestClient
-from sqlalchemy import delete
-
 from factoria.config import Settings
 from factoria.main import create_app
 from factoria.storage.db import create_all, session_factory
 from factoria.storage.models import TwinVersion
+from fastapi.testclient import TestClient
+from sqlalchemy import delete
 
 
 def reset_history() -> None:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from factoria.auth.rbac import Principal
 from factoria.auth.security import create_token, decode_token, hash_password, verify_password
 

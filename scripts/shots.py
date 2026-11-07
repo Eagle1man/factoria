@@ -6,11 +6,10 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
-
-import asyncio
 
 import httpx
 from playwright.sync_api import sync_playwright

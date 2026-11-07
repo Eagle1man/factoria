@@ -1,13 +1,11 @@
 """Безопасность: refresh, отзыв, лимит входа, WS-тикеты, экспорт аудита."""
 from __future__ import annotations
 
-import pytest
-from fastapi.testclient import TestClient
-
 from factoria.auth.limiter import limiter
 from factoria.auth.tickets import tickets
 from factoria.config import Settings
 from factoria.main import create_app
+from fastapi.testclient import TestClient
 
 
 def make_client() -> TestClient:

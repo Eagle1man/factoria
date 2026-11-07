@@ -3,11 +3,10 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
 from factoria.api import commands as commands_api
 from factoria.config import Settings
 from factoria.main import create_app
+from fastapi.testclient import TestClient
 
 
 def make_client(*, autonomy: str = "A1", with_values: bool = True) -> TestClient:

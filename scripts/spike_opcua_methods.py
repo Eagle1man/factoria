@@ -70,7 +70,6 @@ async def main() -> int:
     async with srv, Client(URL) as client:
         l1 = await client.nodes.root.get_child(["0:Objects", f"{idx}:L1"])
         sp = await child_by_name(l1, "Speed.SP")
-        tp = await child_by_name(l1, "Temp.PV")
         setter = await child_by_name(l1, "SetSpeed")
 
         try:

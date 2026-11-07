@@ -1,9 +1,10 @@
 """Health и журнал аудита."""
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
-import json
 
 from factoria.audit.storage import audit
 from factoria.auth.rbac import Principal, require

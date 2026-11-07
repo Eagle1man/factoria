@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from factoria.simulator.line_physics import (
     AMBIENT,
     BadInvalidState,

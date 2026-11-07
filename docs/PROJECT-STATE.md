@@ -54,6 +54,14 @@ python scripts/shots.py             # скриншоты 1920/1280/1024 + 390
 python scripts/smoke_stage6.py      # A2 и WS-события
 ```
 
+## 4.1. CI и качество кода
+
+- `.github/workflows/ci.yml`: ruff, pytest с покрытием, миграции на чистой базе,
+  сборка фронтенда, тест дизайн-системы.
+- Локальный аналог: `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`.
+- Покрытие backend: **91 %** (`docs/assessment/checks/coverage.txt`).
+- Линтер: `ruff check backend tests scripts` — без замечаний.
+
 ## 5. Особенности среды (чтобы не искать заново)
 
 - **Порт 8000:** uvicorn на нём зависает без логов, при этом `asyncio.start_server`

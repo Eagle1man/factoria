@@ -2,18 +2,17 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 
 from factoria.adapters.stub import StubAdapter
 from factoria.model.history import compare, list_versions, save_snapshot
 from factoria.model.semantic import build_semantic
 from factoria.model.twin import build_twin
 from factoria.realtime.cache import TagCache
-from sqlalchemy import delete
-
 from factoria.storage.db import create_all, session_factory
 from factoria.storage.models import TwinVersion
 from factoria.tags.registry import load_registry
+from sqlalchemy import delete
 
 
 def reset_history() -> None:

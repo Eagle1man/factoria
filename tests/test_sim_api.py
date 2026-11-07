@@ -1,10 +1,9 @@
 """API экспериментов: запуск, список, сравнение, права."""
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
-
 from factoria.config import Settings
 from factoria.main import create_app
+from fastapi.testclient import TestClient
 
 
 def make_client() -> TestClient:

@@ -6,7 +6,6 @@ import importlib.util
 from pathlib import Path
 
 import pytest
-
 from factoria.opcua.commands import dispatch_command
 from factoria.tags.registry import load_registry
 

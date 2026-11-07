@@ -5,7 +5,6 @@ import importlib.util
 from pathlib import Path
 
 import pytest
-
 from factoria.opcua.client import OpcuaClient
 from factoria.realtime.cache import GOOD, TagCache
 from factoria.tags.registry import load_registry

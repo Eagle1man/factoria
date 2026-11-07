@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from factoria.config import Settings
+from pydantic import ValidationError
 
 
 def test_local_endpoint_allowed_by_default():

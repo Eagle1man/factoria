@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import httpx
 import pytest
-
 from factoria.adapters.http_ones import HttpOnesAdapter, OnesUnavailable
 
 ORDER = {

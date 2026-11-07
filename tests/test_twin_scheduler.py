@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import asyncio
 
-from sqlalchemy import delete, func, select
-
 from factoria.adapters.stub import StubAdapter
 from factoria.realtime.cache import TagCache
 from factoria.storage.db import create_all, session_factory
 from factoria.storage.models import TwinVersion
 from factoria.tags.registry import load_registry
 from factoria.twin_scheduler import take_snapshot
+from sqlalchemy import delete, func, select
 
 
 def _clear() -> None:
@@ -60,7 +59,6 @@ def test_take_snapshot_reflects_bad_quality():
 
 def test_take_snapshot_skips_empty_cache():
     import pytest
-
     from factoria.realtime.cache import TagCache
     from factoria.twin_scheduler import NoDataYet
 

@@ -4,7 +4,6 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 
 import pytest
-
 from factoria.realtime.cache import BAD, GOOD, STALE, TagCache
 from factoria.tags.registry import load_registry
 

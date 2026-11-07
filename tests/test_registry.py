@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from factoria.tags import registry as reg_mod
 from factoria.tags.registry import RegistryError, load_registry
 
