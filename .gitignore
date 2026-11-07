@@ -16,6 +16,8 @@ data/*.db
 data/*.db-*
 *.sqlite3
 data/1c-*
+data/certs*
+certs/
 
 # Node
 node_modules/

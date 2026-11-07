@@ -43,6 +43,18 @@ Backend слушает **8010**, не 8000: в этой среде uvicorn на 
 логов (asyncio и `http.server` на том же порту работают). Прокси Vite настроен
 на 8010.
 
+## HTTPS (локально)
+
+```powershell
+python scripts/gen_certs.py
+powershell -ExecutionPolicy Bypass -File scripts/run_backend_https.ps1
+# https://127.0.0.1:8443/api/v1/health (сертификат самоподписанный)
+```
+
+Сертификаты лежат в `certs/` и не коммитятся. OPC UA TLS пока не включён:
+спайк на asyncua 2.1 / Python 3.14 зависает на `SecureOpen`
+(`docs/assessment/report-tls-ci.md`).
+
 ## Проверки
 
 ```powershell

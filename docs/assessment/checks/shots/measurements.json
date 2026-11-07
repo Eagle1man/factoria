@@ -1,18 +1,4 @@
 {
-  "experiments_1920": {
-    "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
-    "font_size": "13px",
-    "row_height": 36,
-    "muted_contrast": 6.05,
-    "ink_contrast": 14.57,
-    "doc_width": 1920,
-    "viewport_width": 1920,
-    "overflow": false,
-    "banner_present": true,
-    "banner_text": "Режим чтения · запись в 1С отключена",
-    "nav_items": 10,
-    "buttons_disabled": 0
-  },
   "audit-ok_1920": {
     "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
     "font_size": "13px",
@@ -27,42 +13,14 @@
     "nav_items": 10,
     "buttons_disabled": 0
   },
-  "experiments_1280": {
-    "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
-    "font_size": "13px",
-    "row_height": 36,
-    "muted_contrast": 6.05,
-    "ink_contrast": 14.57,
-    "doc_width": 1280,
-    "viewport_width": 1280,
-    "overflow": false,
-    "banner_present": true,
-    "banner_text": "Режим чтения · запись в 1С отключена",
-    "nav_items": 10,
-    "buttons_disabled": 0
-  },
   "audit-ok_1280": {
     "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
     "font_size": "13px",
-    "row_height": 38,
+    "row_height": 36,
     "muted_contrast": 6.05,
     "ink_contrast": 14.57,
     "doc_width": 1280,
     "viewport_width": 1280,
-    "overflow": false,
-    "banner_present": true,
-    "banner_text": "Режим чтения · запись в 1С отключена",
-    "nav_items": 10,
-    "buttons_disabled": 0
-  },
-  "experiments_1024": {
-    "font_ui": "\"Inter Variable\", Inter, system-ui, sans-serif",
-    "font_size": "13px",
-    "row_height": 36,
-    "muted_contrast": 6.05,
-    "ink_contrast": 14.57,
-    "doc_width": 1024,
-    "viewport_width": 1024,
     "overflow": false,
     "banner_present": true,
     "banner_text": "Режим чтения · запись в 1С отключена",

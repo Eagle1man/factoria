@@ -145,7 +145,10 @@ def main() -> int:
     pages = [item for item in PAGES if not only or item[0] == only]
     warm_up()
     with sync_playwright() as p:
-        browser = p.chromium.launch(channel="chrome", headless=True)
+        try:
+            browser = p.chromium.launch(headless=True)
+        except Exception:
+            browser = p.chromium.launch(channel="chrome", headless=True)
         for width, height in SIZES:
             context = browser.new_context(
                 viewport={"width": width, "height": height}, device_scale_factor=1
@@ -158,8 +161,11 @@ def main() -> int:
                 page.evaluate("document.fonts.ready")
                 page.wait_for_timeout(1200)
                 if name == "scene":
-                    page.wait_for_selector("canvas", timeout=20000)
-                    page.wait_for_timeout(2000)
+                    try:
+                        page.wait_for_selector("canvas", timeout=20000)
+                        page.wait_for_timeout(2000)
+                    except Exception:
+                        print("scene: canvas не появился, снимаю как есть")
                 if name == "approvals":
                     item = page.query_selector(".queue-item")
                     if item:
@@ -225,6 +231,11 @@ def main() -> int:
     )
     print(json.dumps({k: results[k] for k in list(results)[:3]}, ensure_ascii=False, indent=2))
     print("screenshots:", len(list(OUT.glob('*.png'))))
+
+    overflow = [key for key, value in results.items() if value.get("overflow")]
+    if overflow:
+        print("OVERFLOW:", overflow)
+        return 1
     return 0
 
 

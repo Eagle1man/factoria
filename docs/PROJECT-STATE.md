@@ -59,6 +59,10 @@ python scripts/smoke_stage6.py      # A2 и WS-события
 - `.github/workflows/ci.yml`: ruff, pytest с покрытием, миграции на чистой базе,
   сборка фронтенда, тест дизайн-системы.
 - Локальный аналог: `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`.
+- Job `visual`: поднимает контур, снимает скриншоты, падает при переполнении,
+  выгружает артефакт.
+- HTTPS для API: `scripts/gen_certs.py` + `scripts/run_backend_https.ps1`;
+  OPC UA TLS не включён (см. `report-tls-ci.md`).
 - Покрытие backend: **91 %** (`docs/assessment/checks/coverage.txt`).
 - Линтер: `ruff check backend tests scripts` — без замечаний.
 
