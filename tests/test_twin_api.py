@@ -72,3 +72,40 @@ def test_history_empty_delta_first_time():
         client.post("/api/v1/twin/snapshot", headers=headers)
         first = client.get("/api/v1/twin/history?limit=1", headers=headers).json()["versions"][0]
         assert first["delta"]["coverage_pct"] is None
+
+def test_compare_two_snapshots():
+    reset_history()
+    with make_client() as client:
+        headers = login(client)
+        first = client.post("/api/v1/twin/snapshot", headers=headers).json()
+        second = client.post("/api/v1/twin/snapshot", headers=headers).json()
+
+        result = client.get(
+            f"/api/v1/twin/compare?a={first['id']}&b={second['id']}", headers=headers
+        )
+        assert result.status_code == 200
+        body = result.json()
+        assert body["coverage_pct"] == 0.0
+        assert body["tags_good"] == 0
+        assert body["version_changed"] is False
+        assert body["from"]["id"] == first["id"]
+        assert body["to"]["id"] == second["id"]
+
+        missing = client.get("/api/v1/twin/compare?a=999999&b=1", headers=headers)
+        assert missing.status_code == 404
+
+def test_compare_orders_by_time_not_click_order():
+    reset_history()
+    with make_client() as client:
+        headers = login(client)
+        first = client.post("/api/v1/twin/snapshot", headers=headers).json()
+        client.app.state.cache.mark_source_down()
+        second = client.post("/api/v1/twin/snapshot", headers=headers).json()
+
+        # передаём в обратном порядке: сравнение обязано выстроить по времени
+        result = client.get(
+            f"/api/v1/twin/compare?a={second['id']}&b={first['id']}", headers=headers
+        ).json()
+        assert result["from"]["id"] == first["id"]
+        assert result["to"]["id"] == second["id"]
+        assert result["coverage_pct"] < 0

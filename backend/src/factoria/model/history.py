@@ -76,6 +76,11 @@ async def latest(session: AsyncSession) -> dict[str, Any] | None:
     return _as_dict(row) if row else None
 
 
+async def get_version(session: AsyncSession, version_id: int) -> dict[str, Any] | None:
+    row = await session.get(TwinVersion, version_id)
+    return _as_dict(row) if row else None
+
+
 def compare(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
     """Сравнение двух срезов по метрикам."""
     return {

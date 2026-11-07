@@ -162,6 +162,16 @@ def main() -> int:
                         page.screenshot(path=str(OUT / f"documents-drawer_{width}.png"), full_page=True)
                         page.keyboard.press("Escape")
                         page.wait_for_timeout(300)
+                if name == "twin":
+                    tables = page.query_selector_all("table.data")
+                    if tables:
+                        rows = tables[-1].query_selector_all("tbody tr")
+                        for row in rows[-2:]:
+                            row.click()
+                            page.wait_for_timeout(250)
+                        page.wait_for_timeout(700)
+                    page.evaluate("window.scrollTo(0, 0)")
+                    page.wait_for_timeout(300)
                 key = f"{name}_{width}"
                 page.screenshot(path=str(OUT / f"{key}.png"), full_page=True)
                 results[key] = page.evaluate(MEASURE)

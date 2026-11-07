@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type EquipmentResponse, type Twin, type TwinVersion } from '../lib/api'
+import { api, type EquipmentResponse, type Twin, type TwinCompare, type TwinVersion } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import {
   Badge,
@@ -25,6 +25,8 @@ export default function TwinPage() {
   const [twin, setTwin] = useState<Twin | null>(null)
   const [equipment, setEquipment] = useState<EquipmentResponse | null>(null)
   const [history, setHistory] = useState<TwinVersion[]>([])
+  const [selected, setSelected] = useState<number[]>([])
+  const [comparison, setComparison] = useState<TwinCompare | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
 
@@ -52,6 +54,26 @@ export default function TwinPage() {
   }
 
   const canSnapshot = role === 'production_specialist' || role === 'technologist'
+
+  function toggle(id: number) {
+    setSelected((previous) => {
+      if (previous.includes(id)) return previous.filter((item) => item !== id)
+      const next = [...previous, id]
+      return next.slice(-2)
+    })
+    setComparison(null)
+  }
+
+  useEffect(() => {
+    if (selected.length !== 2) {
+      setComparison(null)
+      return
+    }
+    api
+      .compareTwin(selected[0], selected[1])
+      .then(setComparison)
+      .catch(() => setComparison(null))
+  }, [selected])
 
   useEffect(() => {
     load()
@@ -183,10 +205,9 @@ export default function TwinPage() {
           Точность скрыта намеренно: для неё нужен валидированный набор исторических данных.
         </div>
       </Panel>
-
       <Panel
         title="История срезов"
-        hint="каждый срез — факт на момент времени, без ретроспективных правок"
+        hint="выберите два среза, чтобы увидеть расхождение"
         actions={
           canSnapshot ? (
             <button className="btn btn-secondary" onClick={snapshot} disabled={busy}>
@@ -218,7 +239,12 @@ export default function TwinPage() {
                   const tone =
                     delta === null ? undefined : delta > 0 ? 'var(--success)' : delta < 0 ? 'var(--danger)' : 'var(--ink-muted)'
                   return (
-                    <tr key={item.id}>
+                    <tr
+                      key={item.id}
+                      className={selected.includes(item.id) ? 'row-selected' : undefined}
+                      onClick={() => toggle(item.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td className="mono">
                         {item.built_at ? formatTime(item.built_at) : '—'}
                       </td>
@@ -238,6 +264,106 @@ export default function TwinPage() {
                     </tr>
                   )
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        title="Сравнение срезов"
+        hint={
+          selected.length === 2
+            ? 'раньше → позже по выбранным срезам'
+            : 'выберите два среза в таблице выше'
+        }
+      >
+        {selected.length !== 2 ? (
+          <div className="muted" style={{ fontSize: 12 }}>
+            Отметьте две строки в истории — покажу, что изменилось в покрытии, сигналах
+            и версии реестра.
+          </div>
+        ) : !comparison ? (
+          <SkeletonRows rows={2} />
+        ) : (
+          <div className="table-wrap">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Показатель</th>
+                  <th className="num">Срез {comparison.from.id}</th>
+                  <th className="num">Срез {comparison.to.id}</th>
+                  <th className="num">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="muted">Время</td>
+                  <td className="num mono">
+                    {comparison.from.built_at ? formatTime(comparison.from.built_at) : '—'}
+                  </td>
+                  <td className="num mono">
+                    {comparison.to.built_at ? formatTime(comparison.to.built_at) : '—'}
+                  </td>
+                  <td className="num faint">—</td>
+                </tr>
+                <tr>
+                  <td className="muted">Покрытие, %</td>
+                  <td className="num">
+                    {formatNumber(history.find((item) => item.id === comparison.from.id)?.coverage_pct ?? 0, 1)}
+                  </td>
+                  <td className="num">
+                    {formatNumber(history.find((item) => item.id === comparison.to.id)?.coverage_pct ?? 0, 1)}
+                  </td>
+                  <td
+                    className="num"
+                    style={{
+                      color:
+                        comparison.coverage_pct === 0
+                          ? 'var(--ink-muted)'
+                          : comparison.coverage_pct > 0
+                            ? 'var(--success)'
+                            : 'var(--danger)',
+                    }}
+                  >
+                    {comparison.coverage_pct > 0 ? '+' : ''}
+                    {formatNumber(comparison.coverage_pct, 2)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="muted">Сигналов в норме</td>
+                  <td className="num">
+                    {history.find((item) => item.id === comparison.from.id)?.tags_good ?? '—'}
+                  </td>
+                  <td className="num">
+                    {history.find((item) => item.id === comparison.to.id)?.tags_good ?? '—'}
+                  </td>
+                  <td className="num muted">
+                    {comparison.tags_good > 0 ? '+' : ''}
+                    {comparison.tags_good}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="muted">Свежесть, c</td>
+                  <td className="num">
+                    {formatNumber(history.find((item) => item.id === comparison.from.id)?.freshness_sec ?? 0, 2)}
+                  </td>
+                  <td className="num">
+                    {formatNumber(history.find((item) => item.id === comparison.to.id)?.freshness_sec ?? 0, 2)}
+                  </td>
+                  <td className="num muted">
+                    {comparison.freshness_sec === null
+                      ? '—'
+                      : `${comparison.freshness_sec > 0 ? '+' : ''}${formatNumber(comparison.freshness_sec, 2)}`}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="muted">Версия реестра</td>
+                  <td className="num mono faint" colSpan={2}>
+                    {comparison.version_changed ? 'изменилась' : 'та же'}
+                  </td>
+                  <td className="num faint">—</td>
+                </tr>
               </tbody>
             </table>
           </div>

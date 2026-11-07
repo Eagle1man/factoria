@@ -392,6 +392,11 @@ table.data tbody tr:hover {
   background: var(--accent-subtle);
 }
 
+table.data tbody tr.row-selected {
+  background: var(--accent-subtle);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
 .num {
   text-align: right;
   font-family: var(--font-data);

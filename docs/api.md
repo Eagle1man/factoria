@@ -109,3 +109,5 @@
 | `REVALIDATION_FAILED` | условия изменились перед исполнением |
 | `DUPLICATE_SUPPRESSED` | повтор `command_id`, возвращён текущий статус |
 | `BUDGET_EXHAUSTED` | лимит токенов/раундов агента |
+
+| `GET /twin/compare?a=&b=` (любые два среза) | |

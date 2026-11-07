@@ -1,12 +1,12 @@
-"""API двойника: текущий срез и история версий (ТЗ §18.5, ADR-119)."""
+"""API двойника: текущий срез, история и сравнение (ТЗ §18.5, ADR-119)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from factoria.audit.storage import audit
 from factoria.auth.rbac import Principal, require
-from factoria.model.history import list_versions, save_snapshot
+from factoria.model.history import compare, get_version, list_versions, save_snapshot
 from factoria.model.semantic import build_semantic
 from factoria.model.twin import build_twin
 from factoria.storage.db import get_session
@@ -34,6 +34,25 @@ async def twin_history(
 ) -> dict:
     versions = await list_versions(session, limit)
     return {"versions": versions, "count": len(versions)}
+
+
+@router.get("/twin/compare")
+async def twin_compare(
+    a: int = Query(ge=1),
+    b: int = Query(ge=1),
+    session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(require("read")),
+) -> dict:
+    first = await get_version(session, a)
+    second = await get_version(session, b)
+    if first is None or second is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="срез не найден")
+    # Порядок задаёт время, а не порядок кликов: «раньше → позже».
+    from datetime import datetime
+
+    if datetime.fromisoformat(first["built_at"]) > datetime.fromisoformat(second["built_at"]):
+        first, second = second, first
+    return compare(first, second)
 
 
 @router.post("/twin/snapshot", status_code=201)

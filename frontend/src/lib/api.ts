@@ -131,6 +131,15 @@ export interface TwinVersion {
   delta: { coverage_pct: number | null; tags_good: number | null }
 }
 
+export interface TwinCompare {
+  from: { id: number; built_at: string | null }
+  to: { id: number; built_at: string | null }
+  coverage_pct: number
+  tags_good: number
+  freshness_sec: number | null
+  version_changed: boolean
+}
+
 const TOKEN_KEY = 'factoria.token'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
 
@@ -210,4 +219,6 @@ export const api = {
   twinHistory: (limit = 20) =>
     request<{ versions: TwinVersion[]; count: number }>(`/api/v1/twin/history?limit=${limit}`),
   twinSnapshot: () => request<TwinVersion>('/api/v1/twin/snapshot', { method: 'POST' }),
+  compareTwin: (a: number, b: number) =>
+    request<TwinCompare>(`/api/v1/twin/compare?a=${a}&b=${b}`),
 }
