@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from factoria.api import auth as auth_api
 from factoria.api import commands as commands_api
 from factoria.api import orders as orders_api
+from factoria.api import sim as sim_api
 from factoria.api import state as state_api
 from factoria.api import system as system_api
 from factoria.api import twin as twin_api
@@ -116,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(commands_api.router)
     app.include_router(orders_api.router)
     app.include_router(twin_api.router)
+    app.include_router(sim_api.router)
     app.include_router(ws_router)
 
     @app.get("/")

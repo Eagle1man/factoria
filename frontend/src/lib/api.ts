@@ -140,6 +140,50 @@ export interface TwinCompare {
   version_changed: boolean
 }
 
+export interface SimScenario {
+  name: string
+  title: string
+  description: string
+}
+
+export interface SimMetrics {
+  output_index: number
+  max_temp: number
+  avg_load: number
+  uptime_pct: number
+  alarms: number
+  first_alarm_s: number | null
+  final_recipe: string
+}
+
+export interface SimEvent {
+  t: number
+  kind: string
+  action: string
+  detail: string | number
+}
+
+export interface SimRun {
+  id: number
+  scenario: string
+  seed: number
+  horizon_s: number
+  status: string
+  metrics: SimMetrics
+  events: SimEvent[]
+  repro_hash: string
+  created_at: string | null
+  created_by: string
+}
+
+export interface SimCompare {
+  from: { id: number; scenario: string; seed: number }
+  to: { id: number; scenario: string; seed: number }
+  metrics: { from: SimMetrics; to: SimMetrics }
+  delta: Record<string, number>
+  same_repro: boolean
+}
+
 const TOKEN_KEY = 'factoria.token'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
 
@@ -221,4 +265,13 @@ export const api = {
   twinSnapshot: () => request<TwinVersion>('/api/v1/twin/snapshot', { method: 'POST' }),
   compareTwin: (a: number, b: number) =>
     request<TwinCompare>(`/api/v1/twin/compare?a=${a}&b=${b}`),
+  simScenarios: () => request<{ scenarios: SimScenario[] }>('/api/v1/sim/scenarios'),
+  simRuns: (limit = 20) => request<{ runs: SimRun[]; count: number }>(`/api/v1/sim/runs?limit=${limit}`),
+  createSimRun: (scenario: string, seed: number, horizon_s: number) =>
+    request<SimRun>('/api/v1/sim/runs', {
+      method: 'POST',
+      body: JSON.stringify({ scenario, seed, horizon_s }),
+    }),
+  compareSimRuns: (a: number, b: number) =>
+    request<SimCompare>(`/api/v1/sim/runs/compare?a=${a}&b=${b}`),
 }

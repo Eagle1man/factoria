@@ -9,6 +9,7 @@ import Audit from './pages/Audit'
 import Settings from './pages/Settings'
 import Approvals from './pages/Approvals'
 import Documents from './pages/Documents'
+import Experiments from './pages/Experiments'
 import TwinPage from './pages/Twin'
 import Stub from './pages/Stub'
 
@@ -37,22 +38,7 @@ export default function App() {
           <Route path="production" element={<Production />} />
           <Route path="documents" element={<Documents />} />
           <Route path="twin" element={<TwinPage />} />
-          <Route
-            path="experiments"
-            element={
-              <Stub
-                title="Эксперименты"
-                subtitle="Запуски симуляции и сравнение результатов"
-                stage="этапе 8"
-                items={[
-                  'Форма запуска: сценарий, seed, горизонт',
-                  'История запусков с воспроизводимым seed',
-                  'Сравнение двух прогонов по метрикам',
-                  'Пометка «данные симуляции, не факт»',
-                ]}
-              />
-            }
-          />
+          <Route path="experiments" element={<Experiments />} />
           <Route
             path="agents"
             element={

@@ -108,3 +108,18 @@ class TwinVersion(Base):
     freshness_sec: Mapped[float | None] = mapped_column(Float, nullable=True)
     snapshot_seq: Mapped[int] = mapped_column(Integer, default=0)
     warnings: Mapped[str] = mapped_column(Text, default="[]")
+
+
+class SimRun(Base):
+    __tablename__ = "sim_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scenario: Mapped[str] = mapped_column(String(32), index=True)
+    seed: Mapped[int] = mapped_column(Integer)
+    horizon_s: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="DONE")
+    metrics: Mapped[str] = mapped_column(Text, default="{}")
+    events: Mapped[str] = mapped_column(Text, default="[]")
+    repro_hash: Mapped[str] = mapped_column(String(32), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    created_by: Mapped[str] = mapped_column(String(64), default="system")

@@ -45,6 +45,7 @@ PAGES = [
     ("documents", "/documents"),
     ("twin", "/twin"),
     ("approvals", "/approvals"),
+    ("experiments", "/experiments"),
     ("audit", "/audit"),
     ("settings", "/settings"),
     ("scene", "/scene"),
@@ -112,6 +113,17 @@ def main() -> int:
             httpx.post(f"{API}/api/v1/twin/snapshot", headers=headers, timeout=10)
         except httpx.HTTPError:
             pass
+
+    for scenario, seed_value, horizon_value in (("nominal", 42, 60), ("overload", 7, 180)):
+        try:
+            httpx.post(
+                f"{API}/api/v1/sim/runs",
+                headers=headers,
+                timeout=30,
+                json={"scenario": scenario, "seed": seed_value, "horizon_s": horizon_value},
+            )
+        except httpx.HTTPError:
+            pass
     pending = httpx.get(f"{API}/api/v1/commands?status=AWAITING_APPROVAL", headers=headers, timeout=10)
     if pending.json().get("count", 0) == 0:
         httpx.post(
@@ -163,6 +175,16 @@ def main() -> int:
                         page.keyboard.press("Escape")
                         page.wait_for_timeout(300)
                 if name == "twin":
+                    tables = page.query_selector_all("table.data")
+                    if tables:
+                        rows = tables[-1].query_selector_all("tbody tr")
+                        for row in rows[-2:]:
+                            row.click()
+                            page.wait_for_timeout(250)
+                        page.wait_for_timeout(700)
+                    page.evaluate("window.scrollTo(0, 0)")
+                    page.wait_for_timeout(300)
+                if name == "experiments":
                     tables = page.query_selector_all("table.data")
                     if tables:
                         rows = tables[-1].query_selector_all("tbody tr")

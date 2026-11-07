@@ -625,6 +625,21 @@ table.data tbody tr.row-selected {
   font-size: 12px;
 }
 
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}
+
+.form-row .field {
+  min-width: 180px;
+}
+
+select.input {
+  appearance: none;
+  padding-right: 24px;
+}
+
 .drawer-backdrop {
   position: fixed;
   inset: 0;

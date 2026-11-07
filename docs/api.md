@@ -8,7 +8,8 @@
 | Реализовано | Не реализовано |
 |---|---|
 | `POST /auth/login`, `GET /auth/me` | 7 PLANNED путей под 2D-панель (§5) |
-| `GET /equipment`, `GET /equipment/{id}/state`, `GET /tags/history` | `GET /agents/sessions`, `/twin`, `/sim/runs` |
+| `GET /equipment`, `GET /equipment/{id}/state`, `GET /tags/history` | `GET /agents/sessions` |
+| `GET /sim/scenarios`, `POST /sim/runs`, `GET /sim/runs`, `GET /sim/runs/{id}`, `GET /sim/runs/compare` | |
 | `POST /commands`, `GET /commands`, `GET /commands/{id}` | `command_status` / `command_resolved` в WS |
 | `POST /commands/{id}/approve`, `/reject` (A1, TTL 5 мин) | уведомление оператору при A2 |
 | `GET /orders`, `GET /orders/{id}`, `POST /debug/orders` (только dev) | HTTP-сервисы 1С (этап 4b) |
