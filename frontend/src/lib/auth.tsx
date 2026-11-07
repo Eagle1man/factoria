@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ApiError, api, getToken, setToken } from './api'
+import {
+  ApiError,
+  api,
+  getRefreshToken,
+  getToken,
+  setRefreshToken,
+  setToken,
+} from './api'
 
 interface AuthState {
   ready: boolean
@@ -27,7 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(me.role)
         setUserId(me.user_id)
       })
-      .catch(() => setToken(null))
+      .catch(() => {
+        setToken(null)
+        setRefreshToken(null)
+      })
       .finally(() => setReady(true))
   }, [])
 
@@ -39,12 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async login(username: string, password: string) {
         const result = await api.login(username, password)
         setToken(result.access_token)
+        setRefreshToken(result.refresh_token)
         const me = await api.me()
         setRole(me.role)
         setUserId(me.user_id)
       },
       logout() {
+        const refresh = getRefreshToken()
+        if (refresh) void api.logout(refresh)
         setToken(null)
+        setRefreshToken(null)
         setRole(null)
         setUserId(null)
       },

@@ -19,6 +19,12 @@ class Settings(BaseSettings):
 
     jwt_secret: str = DEFAULT_SECRET
     jwt_ttl_min: int = 60
+    access_ttl_min: int = 15
+    refresh_ttl_days: int = 7
+    ws_ticket_ttl_s: int = 30
+    login_max_failures: int = 5
+    login_lock_min: int = 5
+    twin_history_keep: int = 500
 
     opcua_endpoint: str = "opc.tcp://localhost:48400"
     opcua_enabled: bool = True

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Quality, TagValue } from './api'
+import { api, type Quality, type TagValue } from './api'
 
 export type StreamState = 'connecting' | 'open' | 'closed'
 
@@ -18,7 +18,11 @@ interface Delta {
 
 const BACKOFF = [1000, 2000, 5000, 10000]
 
-/** Живые значения тегов по WS: snapshot → delta, переподключение с resume. */
+/** Живые значения тегов по WS: snapshot → delta, переподключение с resume.
+ *
+ * Токен в URL не используется: перед каждым подключением берётся одноразовый
+ * тикет (`POST /auth/ws-ticket`), поэтому JWT не попадает в логи прокси.
+ */
 export function useTags(token: string | null): {
   values: Record<string, TagValue>
   seq: number
@@ -38,11 +42,27 @@ export function useTags(token: string | null): {
     let attempts = 0
     let closed = false
 
-    const connect = () => {
+    const schedule = () => {
       if (closed) return
-      const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-      socket = new WebSocket(`${protocol}://${location.host}/ws?token=${encodeURIComponent(token)}`)
+      const delay = BACKOFF[Math.min(attempts, BACKOFF.length - 1)]
+      attempts += 1
+      reconnectTimer = window.setTimeout(() => void connect(), delay)
+    }
+
+    const connect = async () => {
+      if (closed) return
       setState('connecting')
+      let ticket: string
+      try {
+        ticket = (await api.wsTicket()).ticket
+      } catch {
+        schedule()
+        return
+      }
+      if (closed) return
+
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
+      socket = new WebSocket(`${protocol}://${location.host}/ws?ticket=${encodeURIComponent(ticket)}`)
 
       socket.onopen = () => {
         attempts = 0
@@ -77,16 +97,13 @@ export function useTags(token: string | null): {
 
       socket.onclose = () => {
         setState('closed')
-        if (closed) return
-        const delay = BACKOFF[Math.min(attempts, BACKOFF.length - 1)]
-        attempts += 1
-        reconnectTimer = window.setTimeout(connect, delay)
+        schedule()
       }
 
       socket.onerror = () => socket?.close()
     }
 
-    connect()
+    void connect()
     return () => {
       closed = true
       window.clearTimeout(reconnectTimer)

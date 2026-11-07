@@ -112,3 +112,5 @@
 | `BUDGET_EXHAUSTED` | лимит токенов/раундов агента |
 
 | `GET /twin/compare?a=&b=` (любые два среза) | |
+
+| `GET /audit/export?format=ndjson` | |

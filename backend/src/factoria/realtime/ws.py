@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from factoria.auth.rbac import PERMISSIONS
-from factoria.auth.security import decode_token
+from factoria.auth.tickets import tickets
 from factoria.realtime.cache import TagCache
 from factoria.realtime.events import EventBus
 
@@ -164,14 +164,12 @@ class WsSession:
 
 @router.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket) -> None:
-    token = websocket.query_params.get("token", "")
-    try:
-        payload = decode_token(token)
-    except Exception:  # noqa: BLE001
+    ticket = tickets.consume(websocket.query_params.get("ticket", ""))
+    if ticket is None:
         await websocket.close(code=4401)
         return
 
-    role = payload.get("role", "")
+    role = ticket.role
     if role not in PERMISSIONS["read"]:
         await websocket.close(code=4403)
         return

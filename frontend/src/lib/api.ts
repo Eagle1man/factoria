@@ -185,7 +185,9 @@ export interface SimCompare {
 }
 
 const TOKEN_KEY = 'factoria.token'
+const REFRESH_KEY = 'factoria.refresh'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
+let refreshToken: string | null = sessionStorage.getItem(REFRESH_KEY)
 
 export function setToken(value: string | null): void {
   token = value
@@ -193,8 +195,18 @@ export function setToken(value: string | null): void {
   else sessionStorage.removeItem(TOKEN_KEY)
 }
 
+export function setRefreshToken(value: string | null): void {
+  refreshToken = value
+  if (value) sessionStorage.setItem(REFRESH_KEY, value)
+  else sessionStorage.removeItem(REFRESH_KEY)
+}
+
 export function getToken(): string | null {
   return token
+}
+
+export function getRefreshToken(): string | null {
+  return refreshToken
 }
 
 export class ApiError extends Error {
@@ -205,12 +217,15 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
   if (init.body) headers.set('Content-Type', 'application/json')
 
   const response = await fetch(path, { ...init, headers })
+  if (response.status === 401 && retry && !path.startsWith('/api/v1/auth/')) {
+    if (await refreshSession()) return request<T>(path, init, false)
+  }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`
     try {
@@ -224,8 +239,36 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+let refreshInFlight: Promise<boolean> | null = null
+
+async function refreshSession(): Promise<boolean> {
+  if (!refreshToken) return false
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const response = await fetch('/api/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+        if (!response.ok) return false
+        const body = (await response.json()) as LoginResponse
+        setToken(body.access_token)
+        setRefreshToken(body.refresh_token)
+        return true
+      } catch {
+        return false
+      } finally {
+        refreshInFlight = null
+      }
+    })()
+  }
+  return refreshInFlight
+}
+
 export interface LoginResponse {
   access_token: string
+  refresh_token: string
   role: string
   expires_in: number
 }
@@ -236,6 +279,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     }),
+  logout: (refresh: string) =>
+    fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh }),
+    }),
+  wsTicket: () => request<{ ticket: string; expires_in: number }>('/api/v1/auth/ws-ticket', { method: 'POST' }),
   me: () => request<{ user_id: string; role: string }>('/api/v1/auth/me'),
   health: () => request<Health>('/api/v1/health'),
   equipment: () => request<EquipmentResponse>('/api/v1/equipment'),

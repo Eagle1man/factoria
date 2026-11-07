@@ -112,7 +112,6 @@ class TwinVersion(Base):
 
 class SimRun(Base):
     __tablename__ = "sim_runs"
-
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario: Mapped[str] = mapped_column(String(32), index=True)
     seed: Mapped[int] = mapped_column(Integer)
@@ -123,3 +122,12 @@ class SimRun(Base):
     repro_hash: Mapped[str] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     created_by: Mapped[str] = mapped_column(String(64), default="system")
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    jti: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

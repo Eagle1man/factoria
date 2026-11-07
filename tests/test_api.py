@@ -88,10 +88,18 @@ def test_audit_rbac():
         assert "auth" in kinds
 
 
+def ws_ticket(client: TestClient, token: str) -> str:
+    response = client.post(
+        "/api/v1/auth/ws-ticket", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["ticket"]
+
+
 def test_ws_snapshot_and_resume():
     with make_client() as client:
         token = login(client)
-        with client.websocket_connect(f"/ws?token={token}") as ws:
+        with client.websocket_connect(f"/ws?ticket={ws_ticket(client, token)}") as ws:
             ws.send_json(
                 {"type": "subscribe", "tags": ["L1.Speed.PV"], "delta_only": True,
                  "min_interval_ms": 0}
@@ -110,7 +118,7 @@ def test_ws_requires_valid_token():
 
     with make_client() as client:
         try:
-            with client.websocket_connect("/ws?token=garbage") as ws:
+            with client.websocket_connect("/ws?ticket=garbage") as ws:
                 ws.receive()
         except WebSocketDisconnect as exc:
             assert exc.code == 4401

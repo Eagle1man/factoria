@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
+import json
 
 from factoria.audit.storage import audit
 from factoria.auth.rbac import Principal, require
@@ -40,3 +42,22 @@ async def audit_events(
 ) -> dict:
     events = await audit.recent(limit=limit, kind=kind, actor=actor)
     return {"events": events, "count": len(events)}
+
+
+@router.get("/audit/export")
+async def audit_export(
+    limit: int = Query(default=1000, ge=1, le=10000),
+    kind: str | None = None,
+    principal: Principal = Depends(require("audit_read")),
+) -> StreamingResponse:
+    events = await audit.recent(limit=limit, kind=kind)
+
+    def lines():
+        for event in reversed(events):
+            yield json.dumps(event, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(
+        lines(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="audit.ndjson"'},
+    )

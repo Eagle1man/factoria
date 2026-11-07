@@ -5,9 +5,10 @@ import json
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from factoria.config import get_settings
 from factoria.storage.models import TwinVersion
 
 
@@ -49,6 +50,13 @@ async def save_snapshot(session: AsyncSession, twin: dict[str, Any]) -> dict[str
     session.add(row)
     await session.commit()
     await session.refresh(row)
+
+    keep = get_settings().twin_history_keep
+    max_id = await session.scalar(select(func.max(TwinVersion.id)))
+    if max_id is not None and max_id > keep:
+        await session.execute(delete(TwinVersion).where(TwinVersion.id <= max_id - keep))
+        await session.commit()
+
     return _as_dict(row)
 
 

@@ -6,6 +6,7 @@ import hmac
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from uuid import uuid4
 
 import jwt
 
@@ -50,6 +51,7 @@ def create_token(user_id: str, role: str, ttl_min: int | None = None) -> tuple[s
     payload: dict[str, Any] = {
         "sub": user_id,
         "role": role,
+        "type": "access",
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=ttl)).timestamp()),
     }
@@ -57,6 +59,32 @@ def create_token(user_id: str, role: str, ttl_min: int | None = None) -> tuple[s
     return token, ttl * 60
 
 
-def decode_token(token: str) -> dict[str, Any]:
+def create_access(user_id: str, role: str) -> tuple[str, int]:
     settings = get_settings()
-    return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    return create_token(user_id, role, ttl_min=settings.access_ttl_min)
+
+
+def create_refresh(user_id: str, ttl_days: int | None = None) -> tuple[str, str, datetime]:
+    settings = get_settings()
+    days = ttl_days if ttl_days is not None else settings.refresh_ttl_days
+    now = datetime.now(timezone.utc)
+    expires = now + timedelta(days=days)
+    jti = str(uuid4())
+    payload: dict[str, Any] = {
+        "sub": user_id,
+        "type": "refresh",
+        "jti": jti,
+        "iat": int(now.timestamp()),
+        "exp": int(expires.timestamp()),
+    }
+    token = jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
+    return token, jti, expires
+
+
+def decode_token(token: str, expected_type: str | None = "access") -> dict[str, Any]:
+    settings = get_settings()
+    payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+    token_type = payload.get("type")
+    if expected_type is not None and token_type != expected_type:
+        raise jwt.InvalidTokenError(f"ожидался токен {expected_type}, получен {token_type}")
+    return payload
