@@ -46,9 +46,11 @@ Backend слушает **8010**, не 8000: в этой среде uvicorn на 
 ## Проверки
 
 ```powershell
-python -m pytest -q            # 150 тестов
+python -m pytest -q            # 172 теста
 cd frontend; npm run build     # TypeScript + Vite
 python scripts/shots.py        # скриншоты 1920/1280/1024/390 и замеры
+python -m ruff check backend tests scripts   # линтер
+powershell -ExecutionPolicy Bypass -File scripts/ci.ps1   # всё сразу
 ```
 
 ## Структура

@@ -8,7 +8,7 @@
 | Блок | Состояние | Проверка |
 |---|---|---|
 | OPC UA-эмулятор: 3 линии, 21 тег, 5 метод-нод, interlocks | работает | `pytest`, `SPIKE_RESULT=PASS` |
-| Backend: FastAPI, JWT, RBAC, кэш, WS, SQLite, Alembic, аудит | работает | 150 тестов |
+| Backend: FastAPI, JWT, RBAC, кэш, WS, SQLite, Alembic, аудит | работает | 172 теста, покрытие 91 % |
 | Команды: контракт, 5 стадий валидации, идемпотентность, TTL | работает | smoke + тесты |
 | A1/A2: подтверждение человеком, автономия в коридоре | работает | smoke `command_status` |
 | Согласования, документы (stub), двойник с историей, 3D-сцена | работает | скриншоты |
@@ -48,7 +48,7 @@ cd frontend; npm run dev
 ## 4. Проверки
 
 ```powershell
-python -m pytest -q                 # 150 тестов
+python -m pytest -q                 # 172 теста
 cd frontend; npm run build          # tsc + vite
 python scripts/shots.py             # скриншоты 1920/1280/1024 + 390
 python scripts/smoke_stage6.py      # A2 и WS-события
