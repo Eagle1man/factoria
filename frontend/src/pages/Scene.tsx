@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, Environment, Grid, Lightformer, OrbitControls } from '@react-three/drei'
 import { getToken } from '../lib/api'
@@ -27,6 +27,7 @@ function webglAvailable(): boolean {
 export default function Scene() {
   const { values, state } = useTags(getToken())
   const supported = useMemo(webglAvailable, [])
+  const [inspect, setInspect] = useState(false)
   const dead = LINES.filter((line) => qualityOf(values[`${line}.Speed.PV`]) !== 'GOOD').length
 
   return (
@@ -38,7 +39,12 @@ export default function Scene() {
             Ротор — по оборотам, корпус — по температуре · {state === 'open' ? 'живые данные' : 'ожидание канала'}
           </div>
         </div>
-        <div className="mono faint">{dead === 0 ? 'все линии в норме' : `нет данных: ${dead}`}</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button className={inspect ? 'btn btn-primary' : 'btn btn-secondary'} onClick={() => setInspect((v) => !v)}>
+            {inspect ? 'Инспекция: авто-облёт' : 'Инспекция'}
+          </button>
+          <div className="mono faint">{dead === 0 ? 'все линии в норме' : `нет данных: ${dead}`}</div>
+        </div>
       </div>
 
       {!supported ? (
@@ -116,6 +122,8 @@ export default function Scene() {
                 minDistance={4}
                 maxDistance={14}
                 maxPolarAngle={Math.PI / 2.05}
+                autoRotate={inspect}
+                autoRotateSpeed={0.7}
               />
             </Canvas>
           </div>

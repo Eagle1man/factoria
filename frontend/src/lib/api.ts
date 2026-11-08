@@ -30,6 +30,15 @@ export interface EquipmentResponse {
   seq: number
 }
 
+export interface LlmStatus {
+  provider: string
+  configured?: boolean
+  reachable: boolean
+  model?: string | null
+  detail?: string
+  model_present?: boolean | null
+}
+
 export interface Health {
   status: string
   env: string
@@ -37,6 +46,7 @@ export interface Health {
     opcua: { state: string; changed_at: string | null; endpoint: string }
     database: string
   }
+  llm?: LlmStatus
   tags: { total: number; not_good: number }
   snapshot_ts: string
 }
@@ -184,6 +194,36 @@ export interface SimCompare {
   same_repro: boolean
 }
 
+export interface ShopStation {
+  id: string
+  name: string
+  type: string
+  status: string
+  takt_s: number | null
+  line_id: string | null
+  metric_label: string | null
+  metric_value: string | null
+  note: string | null
+}
+
+export interface ShopTemplate {
+  id: string
+  name: string
+  description: string
+  target_output: string
+  takt_time_s: number
+  bottleneck_node_id: string
+  bottleneck_reason: string
+  bottleneck_line_id: string | null
+  order_number: string
+  part_name: string
+  plan_quantity: number
+  fact_quantity: number
+  defects: number
+  sim_scenario: string | null
+  stations: ShopStation[]
+}
+
 const TOKEN_KEY = 'factoria.token'
 const REFRESH_KEY = 'factoria.refresh'
 let token: string | null = sessionStorage.getItem(TOKEN_KEY)
@@ -324,4 +364,19 @@ export const api = {
     }),
   compareSimRuns: (a: number, b: number) =>
     request<SimCompare>(`/api/v1/sim/runs/compare?a=${a}&b=${b}`),
+  templates: () => request<{ templates: ShopTemplate[]; count: number }>('/api/v1/templates'),
+  template: (id: string) => request<ShopTemplate>(`/api/v1/templates/${id}`),
+  submitCommand: (body: {
+    command_id: string
+    type: string
+    target: { line_id: string }
+    params: Record<string, unknown>
+    requested_by: { kind: 'human' | 'agent'; id: string }
+    agent_session_id?: string | null
+    correlation_id: string
+    evidence: string[]
+  }) => request<{ command_id: string; status: string; autonomy_level?: string; duplicate?: boolean }>(
+    '/api/v1/commands',
+    { method: 'POST', body: JSON.stringify(body) },
+  ),
 }

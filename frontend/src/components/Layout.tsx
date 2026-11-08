@@ -11,6 +11,7 @@ import {
   ScrollText,
   Settings as SettingsIcon,
   ShieldCheck,
+  Workflow,
 } from 'lucide-react'
 import { api, type Health } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -19,6 +20,7 @@ const NAV = [
   { to: '/', label: 'Обзор', icon: LayoutDashboard, end: true },
   { to: '/documents', label: 'Документы 1С', icon: FileText },
   { to: '/production', label: 'Производство', icon: Factory },
+  { to: '/flow', label: 'Поток цеха', icon: Workflow },
   { to: '/twin', label: 'Двойник', icon: Boxes },
   { to: '/experiments', label: 'Эксперименты', icon: FlaskConical },
   { to: '/agents', label: 'Агенты', icon: Bot },
@@ -32,6 +34,7 @@ const TITLES: Record<string, string> = {
   '/': 'Обзор',
   '/documents': 'Документы 1С',
   '/production': 'Производство',
+  '/flow': 'Поток цеха',
   '/twin': 'Цифровой двойник',
   '/experiments': 'Эксперименты',
   '/agents': 'Агенты и трассы',

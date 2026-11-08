@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FACTORIA // Enterprise Industrial Digital Twin & AI Co-Pilot</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0c141b',
+            'surface-bright': '#1a2632',
+            'surface-dark': '#070d12',
+            accent: '#ffb020',
+            cyanlead: '#00f2fe',
+            danger: '#ff3366',
+            success: '#00e676'
+          },
+          fontFamily: {
+            mono: ['Courier New', 'monospace', 'IBM Plex Mono'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+<!-- React 18 & ReactDOM -->
+<script crossorigin="" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin="" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- Babel Standalone (for in-browser JSX execution) -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Three.js (for 3D Machine Inspection) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+    /* Industrial Grid & Terminal Visual Accents */
+    body {
+      background-color: #070d12;
+      color: #cfd8dc;
+      overflow-x: hidden;
+    }
+    .grid-bg {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 176, 32, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 176, 32, 0.05) 1px, transparent 1px);
+    }
+    .crt-glow {
+      text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+    }
+    .amber-glow {
+      text-shadow: 0 0 8px rgba(255, 176, 32, 0.5);
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c141b; }
+    ::-webkit-scrollbar-thumb { background: #263238; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ffb020; }
+  </style>
+
+<body class="font-sans antialiased select-none">
+<div id="root"></div>
+<!-- APPLICATION CODE -->
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- TEMPLATES DEFINITION ---
+    const TEMPLATES = [
+      { id: "cnc", title: "ЧПУ Металлообработка", tag: "узкое место: DMU 50 (85s)", throughput: "48.2 pcs/h", order: "ВТУЛКА-45M" },
+      { id: "drone", title: "Сборка БПЛА & Дронов", tag: "Fanuc M-20 (42s)", throughput: "22.0 pcs/h", order: "ДРОН X4-PRO" },
+      { id: "sat", title: "Спутники CubeSat", tag: "AeroLab QC (210m)", throughput: "0.17 pcs/h", order: "CUBESAT 6U" },
+      { id: "battery", title: "Гигафабрика АКБ", tag: "Dry Room (0.12s)", throughput: "5170 pcs/h", order: "LFP-4680" }
+    ];
+
+    function App() {
+      const [currentTemplate, setCurrentTemplate] = useState("cnc");
+      const [feedRate, setFeedRate] = useState(850);
+      const [spindleRpm, setSpindleRpm] = useState(12400);
+      const [vibrationRms, setVibrationRms] = useState(0.424);
+      const [queueBuffer, setQueueBuffer] = useState(14);
+      const [throughput, setThroughput] = useState(48.2);
+      const [oee, setOee] = useState(89.4);
+      const [isResolved, setIsResolved] = useState(false);
+      const [activeTab, setActiveTab] = useState("2D"); // "2D" or "3D"
+      const [showAiModal, setShowAiModal] = useState(false);
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [logs, setLogs] = useState([
+        { time: "14:48:02", text: "SCADA_OPC_TAG: S7_1500.CNC_01 Cycle_Complete = TRUE" },
+        { time: "14:48:15", text: "[1C:ERP] Doc 'Выпуск продукции' #B-10492 (+24 шт)" },
+        { time: "14:48:29", text: "TRUMPF_3030 Optics_Temp: 44.2°C (Warning > 48°C)" }
+      ]);
+
+      // Telemetry Jitter Loop
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setVibrationRms(prev => +(0.424 + (Math.random() * 0.04 - 0.02)).toFixed(3));
+        }, 1200);
+        return () => clearInterval(interval);
+      }, []);
+
+      // 1-Click Action Handlers
+      const handleOverclock = () => {
+        setFeedRate(1120);
+        setThroughput(63.6);
+        setOee(92.8);
+        setQueueBuffer(3);
+        setIsResolved(true);
+        setLogs(prev => [
+          { time: new Date().toLocaleTimeString(), text: "ACTION: Feed Rate forced to 1,120 mm/min. Throughput +32%." },
+          ...prev
+        ]);
+      };
+
+      const handleRerouteAgv = () => {
+        setQueueBuffer(2);
+        setLogs(prev => [
+          { time: new Date().toLocaleTimeString(), text: "AGV SLAM: Routing buffer directly to Fanuc standby post." },
+          ...prev
+        ]);
+      };
+
+      const handleWorkOrder1C = () => {
+        setLogs(prev => [
+          { time: new Date().toLocaleTimeString(), text: "1C:TOiR: Work order #WO-4492 submitted to maintenance pool." },
+          ...prev
+        ]);
+      };
+
+      return (
+        <div class="min-h-screen bg-surface flex flex-col text-slate-300">
+          
+          {/* 1. TOP HEADER & TELEMETRY STATUS */}
+          <header class="bg-surface-dark border-b border-slate-800 px-6 py-2 flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-6">
+              <div class="flex items-center space-x-2">
+                <span class="inline-block w-3 h-3 bg-accent rounded-sm shadow-sm shadow-accent"></span>
+                <span class="font-bold text-sm tracking-wider text-white">FACTORIA</span>
+                <span class="text-slate-500">// ENTERPRISE SIMS v4.8</span>
+              </div>
+              <div class="flex items-center space-x-2 text-slate-400">
+                <span>SCADA: <strong class="text-green-400">120 FPS</strong></span>
+                <span>•</span>
+                <span>1C:ERP: <strong class="text-cyan-400">SYNCED (InduLink OData)</strong></span>
+                <span>•</span>
+                <span>OPC UA: <strong class="text-slate-200">48 TAGS ACTIVE</strong></span>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <button 
+                onClick={() => setShowAiModal(true)}
+                class="bg-cyan-950/70 border border-cyan-500/50 hover:border-cyan-400 text-cyan-300 px-3 py-1.5 rounded flex items-center space-x-2 transition"
+              >
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span class="font-bold">AGENT READY // ACTIVE INFERENCE</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowExportModal(true)}
+                class="bg-amber-950/60 border border-accent/60 hover:border-accent text-accent px-3 py-1.5 rounded font-mono font-bold transition"
+              >
+                1C / OPC UA EXPORT
+              </button>
+            </div>
+          </header>
+
+          {/* 2. AIRSUP.AI TEMPLATE CHIPS BAR */}
+          <div class="bg-surface border-b border-slate-800/80 px-6 py-2 flex items-center space-x-2 overflow-x-auto text-xs font-mono">
+            <span class="text-slate-500 mr-2 uppercase tracking-wide">Шаблоны Airsup:</span>
+            {TEMPLATES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setCurrentTemplate(t.id);
+                  setIsResolved(false);
+                  setThroughput(t.throughput);
+                }}
+                class={`px-3 py-1 rounded-full border transition flex items-center space-x-1.5 whitespace-nowrap ${
+                  currentTemplate === t.id
+                    ? "bg-slate-800 border-accent text-white"
+                    : "bg-surface-dark/70 border-slate-800 text-slate-400 hover:border-slate-700"
+                }`}
+              >
+                <span>▸ {t.title}</span>
+                <span class={`text-[10px] px-1.5 py-0.5 rounded ${
+                  currentTemplate === t.id ? "bg-accent/20 text-accent font-bold" : "text-slate-500"
+                }`}>
+                  {t.tag}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* 3. MAIN DASHBOARD CONTENT */}
+          <main class="flex-1 flex overflow-hidden">
+            
+            {/* LEFT PALETTE: Station Equipment */}
+            <aside class="w-64 bg-surface-dark border-r border-slate-800 p-4 flex flex-col space-y-4">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-400 flex justify-between">
+                <span>Палитра узлов</span>
+                <span class="text-accent">Drag & Drop</span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="p-3 bg-surface border border-slate-800 hover:border-accent/50 rounded cursor-move transition">
+                  <div class="text-white font-bold">Siemens DMU 50</div>
+                  <div class="text-slate-500">5-Axis CNC Mill • 18.5 kW</div>
+                </div>
+                <div class="p-3 bg-surface border border-slate-800 hover:border-accent/50 rounded cursor-move transition">
+                  <div class="text-white font-bold">TRUMPF TruLaser 5030</div>
+                  <div class="text-slate-500">Fiber Laser • 4.0 kW</div>
+                </div>
+                <div class="p-3 bg-surface border border-slate-800 hover:border-accent/50 rounded cursor-move transition">
+                  <div class="text-white font-bold">FANUC M-20iD</div>
+                  <div class="text-slate-500">Robotic Arm • Takt 14s</div>
+                </div>
+                <div class="p-3 bg-surface border border-slate-800 hover:border-accent/50 rounded cursor-move transition">
+                  <div class="text-white font-bold">Autonomous AGV</div>
+                  <div class="text-slate-500">LiDAR SLAM • 2.2 kW</div>
+                </div>
+              </div>
+
+              {/* 1C Shift Production Card */}
+              <div class="mt-auto bg-surface-bright/40 border border-slate-800 p-3 rounded text-xs space-y-2">
+                <div class="text-slate-400 font-bold uppercase text-[11px]">1C:ERP Сменное задание</div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Деталь:</span>
+                  <span class="text-white font-bold">ВТУЛКА-45М</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Выпуск:</span>
+                  <span class="text-accent font-bold">342 / 500 шт</span>
+                </div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-accent h-full w-[68%]"></div>
+                </div>
+              </div>
+            </aside>
+
+            {/* CENTER: Canvas 2.5D or Three.js 3D Viewer */}
+            <section class="flex-1 flex flex-col bg-surface-dark relative grid-bg">
+              
+              {/* Canvas Controls */}
+              <div class="absolute top-4 left-4 z-10 flex space-x-2">
+                <button 
+                  onClick={() => setActiveTab("2D")}
+                  class={`px-3 py-1 text-xs rounded font-bold border transition ${
+                    activeTab === "2D" ? "bg-accent text-black border-accent" : "bg-slate-900 border-slate-700 text-slate-300"
+                  }`}
+                >
+                  2.5D СХЕМА ЦЕХА
+                </button>
+                <button 
+                  onClick={() => setActiveTab("3D")}
+                  class={`px-3 py-1 text-xs rounded font-bold border transition ${
+                    activeTab === "3D" ? "bg-accent text-black border-accent" : "bg-slate-900 border-slate-700 text-slate-300"
+                  }`}
+                >
+                  3D LAB VIEW (THREE.JS)
+                </button>
+              </div>
+
+              {/* View Container */}
+              <div class="flex-1 flex items-center justify-center p-6">
+                {activeTab === "2D" ? (
+                  <IsometricFactoryCanvas isResolved={isResolved} queueBuffer={queueBuffer} />
+                ) : (
+                  <ThreeJsMachineViewer />
+                )}
+              </div>
+
+              {/* Bottom KPIs Strip */}
+              <div class="h-20 bg-surface border-t border-slate-800 px-6 flex items-center justify-between text-xs">
+                <div>
+                  <span class="text-slate-500 block uppercase font-mono">OVERALL OEE</span>
+                  <span class="text-xl font-bold text-white font-mono">{oee}%</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block uppercase font-mono">THROUGHPUT / TAKT</span>
+                  <span class="text-xl font-bold text-accent font-mono">{throughput}</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block uppercase font-mono">ШПИНДЕЛЬ ВИБРАЦИЯ (ISO)</span>
+                  <span class="text-xl font-bold text-cyan-400 font-mono">{vibrationRms} мм/с</span>
+                </div>
+                <div>
+                  <span class="text-slate-500 block uppercase font-mono">УЗКОЕ МЕСТО ЦЕХА</span>
+                  <span class={`font-bold font-mono px-2 py-0.5 rounded text-xs ${
+                    isResolved ? "bg-green-950 border border-green-500 text-green-400" : "bg-red-950 border border-red-500 text-red-400"
+                  }`}>
+                    {isResolved ? "ОПТИМИЗИРОВАНО (BALANCED)" : "ST-03: DMU 50 (85s)"}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setShowAiModal(true)}
+                  class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded text-xs shadow-lg transition"
+                >
+                  СПРОСИТЬ АГЕНТА [AI RESOLVE]
+                </button>
+              </div>
+            </section>
+
+            {/* RIGHT SIDEBAR: Telemetry HUD & AI Co-Pilot Chain of Thought */}
+            <aside class="w-96 bg-surface-dark border-l border-slate-800 flex flex-col">
+              
+              {/* Bottleneck Alert Banner */}
+              <div class="p-4 bg-red-950/40 border-b border-red-900/60">
+                <div class="flex items-center space-x-2 text-red-400 font-bold text-xs uppercase">
+                  <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                  <span>Обнаружено узкое место такта</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-1">
+                  Черновой шпиндель DMU 50 (такт 85с) сдерживает всю линию до 48.2 pcs/h.
+                </p>
+              </div>
+
+              {/* Chain of Thought Stream */}
+              <div class="p-4 flex-1 overflow-y-auto space-y-3 text-xs">
+                <div class="text-[11px] font-bold uppercase text-slate-400 tracking-wider">
+                  Цепочка рассуждений агента (CoT)
+                </div>
+
+                <div class="bg-surface p-3 rounded border border-slate-800">
+                  <span class="text-accent font-bold block mb-1">Шаг 1: Анализ буфера накопителя</span>
+                  <p class="text-slate-400 leading-relaxed">
+                    Перед DMU 50 скопилось <strong class="text-white">{queueBuffer} необработанных заготовок</strong>. Задержка такта линии составляет +18.2%.
+                  </p>
+                </div>
+
+                <div class="bg-surface p-3 rounded border border-slate-800">
+                  <span class="text-cyan-400 font-bold block mb-1">Шаг 2: Симуляция решения</span>
+                  <p class="text-slate-400 leading-relaxed">
+                    Распараллеливание подачи с 850 мм/мин до 1,120 мм/мин при давлении СОЖ 330 bar снизит такт до 71s.
+                  </p>
+                </div>
+
+                <div class="bg-surface p-3 rounded border border-slate-800">
+                  <span class="text-green-400 font-bold block mb-1">Шаг 3: Проверка 1С:ТОиР & ISO</span>
+                  <p class="text-slate-400 leading-relaxed">
+                    Вибрация подшипника {vibrationRms} мм/с в пределах допуска ISO (&lt;1.8 мм/с). Окупаемость инструмента подтверждена.
+                  </p>
+                </div>
+
+                {/* 1-Click Actuation Action Buttons */}
+                <div class="pt-2 space-y-2">
+                  <button 
+                    onClick={handleOverclock}
+                    class="w-full bg-accent/20 hover:bg-accent/30 border border-accent text-accent font-bold py-2 rounded text-xs transition flex justify-between px-3"
+                  >
+                    <span>⚡ Применить оптимизацию подачи</span>
+                    <span class="bg-accent text-black px-1.5 rounded text-[10px]">+32% Takt</span>
+                  </button>
+
+                  <button 
+                    onClick={handleRerouteAgv}
+                    class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2 rounded text-xs transition flex justify-between px-3"
+                  >
+                    <span>🔄 Перенаправить AGV на Fanuc</span>
+                    <span class="text-slate-400 text-[10px]">MQTT SLAM</span>
+                  </button>
+
+                  <button 
+                    onClick={handleWorkOrder1C}
+                    class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2 rounded text-xs transition flex justify-between px-3"
+                  >
+                    <span>📋 Создать наряд в 1С:ТОиР</span>
+                    <span class="text-slate-400 text-[10px]">через 3.4ч</span>
+                  </button>
+                </div>
+
+                {/* Real-Time SCADA Event Log */}
+                <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono space-y-1">
+                  <div class="text-slate-500 font-bold mb-1">ДВУСТОРОННИЙ БРОКЕР SCADA / 1C</div>
+                  {logs.map((log, idx) => (
+                    <div key={idx} class="text-slate-400">
+                      <span class="text-cyan-600">[{log.time}]</span> {log.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </main>
+
+          {/* 4. MODAL: 1C & OPC UA Export Studio */}
+          {showExportModal && (
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+              <div class="bg-surface border border-slate-700 w-full max-w-2xl rounded-lg overflow-hidden shadow-2xl">
+                <div class="bg-surface-dark px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                  <div class="font-bold text-white text-sm">ЭКСПОРТ КОНФИГУРАЦИИ // 1C:ERP XML & OPC UA NodeSet</div>
+                  <button onClick={() => setShowExportModal(false)} class="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div class="p-6 space-y-4 text-xs font-mono">
+                  <div class="bg-surface-dark p-3 rounded border border-slate-800 text-slate-300 overflow-x-auto max-h-48 text-[11px]">
+                    {`<?xml version="1.0" encoding="UTF-8"?>
+<EnterpriseData formatVersion="1.14">
+  <Document.СменноСуточноеЗадание>
+    <Номер>#1489-M</Номер>
+    <Номенклатура>ВТУЛКА-45М</Номенклатура>
+    <План>500</План>
+    <Факт>342</Факт>
+  </Document.СменноСуточноеЗадание>
+</EnterpriseData>`}
+                  </div>
+                  <div class="flex justify-between items-center text-slate-400">
+                    <span>Состав: 7 рабочих центров • 48 тегов OPC UA</span>
+                    <button 
+                      onClick={() => {
+                        alert("Конфигурация передана в 1С:ERP через OData API.");
+                        setShowExportModal(false);
+                      }}
+                      class="bg-accent text-black font-bold px-4 py-2 rounded text-xs"
+                    >
+                      Прямой PUSH в 1C:ERP OData
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5. MODAL: AI Bottleneck Agent Chat Dialog */}
+          {showAiModal && (
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+              <div class="bg-surface border border-cyan-500/50 w-full max-w-xl rounded-lg overflow-hidden shadow-2xl">
+                <div class="bg-surface-dark px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                  <div class="font-bold text-cyan-400 text-sm flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                    <span>FACTORIA AI // Bottleneck Dispatcher & Co-Pilot</span>
+                  </div>
+                  <button onClick={() => setShowAiModal(false)} class="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div class="p-6 space-y-4 text-xs">
+                  <div class="bg-surface-dark p-4 rounded border border-slate-800 text-slate-300 leading-relaxed">
+                    Я проанализировал телеметрию SCADA за последние 40 минут. Шпиндель DMU 50 работает на предельной загрузке 94.2%. 
+                    Рекомендую либо форсировать подачу охлаждения до 330 bar, либо задействовать свободный слот робота Fanuc.
+                  </div>
+                  <div class="flex space-x-2">
+                    <input 
+                      type="text" 
+                      placeholder="Спросить агента (например: /rebalance-line)..." 
+                      class="flex-1 bg-surface-dark border border-slate-700 px-3 py-2 rounded text-white text-xs focus:outline-none focus:border-cyan-400"
+                    />
+                    <button class="bg-cyan-600 text-white font-bold px-4 py-2 rounded text-xs">
+                      Отправить
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- 2.5D ISOMETRIC FACTORY CANVAS COMPONENT ---
+    function IsometricFactoryCanvas({ isResolved, queueBuffer }) {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        let animationFrameId;
+
+        let partOffset = 0;
+
+        const render = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw Isometric Grid
+          ctx.strokeStyle = "rgba(255, 176, 32, 0.1)";
+          ctx.lineWidth = 1;
+          for (let x = -200; x < canvas.width + 200; x += 40) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x + 200, canvas.height);
+            ctx.stroke();
+          }
+
+          // Draw Conveyor Path
+          ctx.strokeStyle = "#37474f";
+          ctx.lineWidth = 18;
+          ctx.beginPath();
+          ctx.moveTo(100, 240);
+          ctx.lineTo(600, 240);
+          ctx.stroke();
+
+          // Draw Machine 1: TRUMPF Laser
+          ctx.fillStyle = "#263238";
+          ctx.fillRect(120, 160, 90, 70);
+          ctx.strokeStyle = "#ffb020";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(120, 160, 90, 70);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "10px monospace";
+          ctx.fillText("TRUMPF 5030", 128, 195);
+
+          // Draw Machine 2: DMU 50 (Bottleneck)
+          ctx.fillStyle = isResolved ? "#1b5e20" : "#b71c1c";
+          ctx.fillRect(320, 140, 110, 90);
+          ctx.strokeStyle = isResolved ? "#00e676" : "#ff3366";
+          ctx.strokeRect(320, 140, 110, 90);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText("DMU 50 (CNC)", 335, 180);
+          ctx.fillStyle = "#ffcc80";
+          ctx.fillText(isResolved ? "NORMAL" : `QUEUE: ${queueBuffer}`, 335, 205);
+
+          // Draw Machine 3: FANUC Robot
+          ctx.fillStyle = "#263238";
+          ctx.fillRect(520, 160, 80, 70);
+          ctx.strokeStyle = "#00f2fe";
+          ctx.strokeRect(520, 160, 80, 70);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText("FANUC M-20", 528, 195);
+
+          // Moving parts on conveyor
+          partOffset = (partOffset + 1.5) % 80;
+          for (let i = 0; i < 6; i++) {
+            const px = 100 + (i * 80) + partOffset;
+            if (px < 600) {
+              ctx.fillStyle = "#ffb020";
+              ctx.beginPath();
+              ctx.arc(px, 240, 6, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          animationFrameId = requestAnimationFrame(render);
+        };
+
+        render();
+        return () => cancelAnimationFrame(animationFrameId);
+      }, [isResolved, queueBuffer]);
+
+      return (
+        <canvas 
+          ref={canvasRef} 
+          width={720} 
+          height={400} 
+          class="rounded border border-slate-800 bg-surface/80 shadow-2xl"
+        />
+      );
+    }
+
+    // --- 3D THREE.JS MACHINE INSPECTION COMPONENT ---
+    function ThreeJsMachineViewer() {
+      const mountRef = useRef(null);
+
+      useEffect(() => {
+        const mount = mountRef.current;
+        if (!mount) return;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0c141b);
+
+        const camera = new THREE.PerspectiveCamera(45, mount.clientWidth / mount.clientHeight, 0.1, 1000);
+        camera.position.set(4, 3, 5);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(mount.clientWidth, mount.clientHeight);
+        mount.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffb020, 1.2);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        // Industrial Machine Base Group
+        const machineGroup = new THREE.Group();
+
+        // Machine Enclosure
+        const baseGeo = new THREE.BoxGeometry(2.4, 1.6, 1.8);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.4 });
+        const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        machineGroup.add(baseMesh);
+
+        // Glowing Spindle
+        const spindleGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.2, 32);
+        const spindleMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, metalness: 0.8, roughness: 0.2 });
+        const spindleMesh = new THREE.Mesh(spindleGeo, spindleMat);
+        spindleMesh.position.set(0, 0.5, 0);
+        machineGroup.add(spindleMesh);
+
+        // Tooling Holder
+        const toolGeo = new THREE.ConeGeometry(0.15, 0.5, 16);
+        const toolMat = new THREE.MeshStandardMaterial({ color: 0xffb020 });
+        const toolMesh = new THREE.Mesh(toolGeo, toolMat);
+        toolMesh.rotation.x = Math.PI;
+        toolMesh.position.set(0, -0.2, 0);
+        machineGroup.add(toolMesh);
+
+        scene.add(machineGroup);
+
+        // Animation Loop
+        let animationFrameId;
+        const animate = () => {
+          machineGroup.rotation.y += 0.008;
+          spindleMesh.rotation.y += 0.05;
+          renderer.render(scene, camera);
+          animationFrameId = requestAnimationFrame(animate);
+        };
+        animate();
+
+        return () => {
+          cancelAnimationFrame(animationFrameId);
+          if (mount.contains(renderer.domElement)) {
+            mount.removeChild(renderer.domElement);
+          }
+        };
+      }, []);
+
+      return (
+        <div class="w-[720px] h-[400px] rounded border border-slate-800 overflow-hidden relative shadow-2xl">
+          <div ref={mountRef} class="w-full h-full" />
+          <div class="absolute bottom-3 left-4 text-xs font-mono text-slate-400 bg-surface/80 px-3 py-1 rounded border border-slate-700">
+            SIEMENS SINUMERIK DMU 50 // THREE.JS 3D KINEMATICS
+          </div>
+        </div>
+      );
+    }
+
+    // Render React Root
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>

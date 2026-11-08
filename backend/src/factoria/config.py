@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     ones_http_user: str = ""
     ones_http_password: str = ""
 
+    llm_provider: str = "none"  # none | deepseek | ollama
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com"
+    ollama_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen3.5:35b"
+    llm_timeout_s: float = 3.0
+
     @model_validator(mode="after")
     def _guard(self) -> "Settings":
         if self.env != "dev" and self.jwt_secret == DEFAULT_SECRET:
@@ -57,6 +64,10 @@ class Settings(BaseSettings):
             raise ValueError("ONES_MODE должен быть stub, http или odata")
         if self.ones_mode in {"http", "odata"} and not self.ones_http_url:
             raise ValueError("ONES_MODE=http|odata требует ONES_HTTP_URL")
+        if self.llm_provider not in {"none", "deepseek", "ollama"}:
+            raise ValueError("LLM_PROVIDER должен быть none, deepseek или ollama")
+        if self.llm_timeout_s <= 0:
+            raise ValueError("LLM_TIMEOUT_S должен быть > 0")
         if self.tag_history_retention_h <= 0:
             raise ValueError("TAG_HISTORY_RETENTION_H должен быть > 0")
         if self.twin_snapshot_minutes < 0:

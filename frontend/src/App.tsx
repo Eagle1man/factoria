@@ -11,6 +11,7 @@ import Approvals from './pages/Approvals'
 import Documents from './pages/Documents'
 import Experiments from './pages/Experiments'
 import TwinPage from './pages/Twin'
+import Flow from './pages/Flow'
 import Stub from './pages/Stub'
 
 const Scene = lazy(() => import('./pages/Scene'))
@@ -37,6 +38,7 @@ export default function App() {
           <Route index element={<Overview />} />
           <Route path="production" element={<Production />} />
           <Route path="documents" element={<Documents />} />
+          <Route path="flow" element={<Flow />} />
           <Route path="twin" element={<TwinPage />} />
           <Route path="experiments" element={<Experiments />} />
           <Route

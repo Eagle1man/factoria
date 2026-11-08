@@ -1,0 +1,103 @@
+{
+  "templates": {
+    "cnc_metal": {
+      "id": "cnc_metal",
+      "name": "ЧПУ Металлообработка (DMU 50)",
+      "targetOutput": "1,489 pcs/day",
+      "taktTime": 85.0,
+      "bottleneckNodeId": "ST-03",
+      "bottleneckReason": "Черновой шпиндель DMU 50 (такт 85с / деталь) сдерживает подачу",
+      "orderNumber": "#1489-M",
+      "partName": "ВТУЛКА-45М (Сталь 40Х)",
+      "planQuantity": 500,
+      "factQuantity": 342,
+      "defects": 1,
+      "machines": [
+        {
+          "id": "ST-01",
+          "name": "TRUMPF TruLaser 5030 Fiber",
+          "type": "laser",
+          "x": 2, "y": 4,
+          "power": "4.0 kW",
+          "metricKey": "Reflectance",
+          "metricVal": "99.2 %",
+          "opcNode": "ns=2;s=PLANT.TRUMPF5030.Laser_Power",
+          "takt": 24.0,
+          "status": "RUNNING"
+        },
+        {
+          "id": "ST-02",
+          "name": "Conveyor Transfer VFD",
+          "type": "conveyor",
+          "x": 4, "y": 4,
+          "speed": "0.8 m/s",
+          "queue": 14,
+          "maxQueue": 20,
+          "status": "WARN_QUEUE"
+        },
+        {
+          "id": "ST-03",
+          "name": "Siemens Sinumerik DMU 50",
+          "type": "cnc",
+          "x": 6, "y": 4,
+          "rpm": 12400,
+          "feedRate": 850,
+          "vibrationRms": 0.42,
+          "spindleLoad": 94.2,
+          "coolantBar": 330,
+          "opcNode": "ns=2;s=PLANT.DMU50.Spindle_Vib_RMS",
+          "takt": 85.0,
+          "status": "BOTTLENECK"
+        },
+        {
+          "id": "ST-04",
+          "name": "FANUC M-20iD Robot Cell",
+          "type": "robot",
+          "x": 8, "y": 4,
+          "gripForce": "85 N",
+          "cycleTime": "14.2s",
+          "opcNode": "ns=2;s=PLANT.FANUC.Grip_Force",
+          "takt": 14.2,
+          "status": "RUNNING"
+        },
+        {
+          "id": "ST-05",
+          "name": "Autonomous AGV Carrier Fleet",
+          "type": "agv",
+          "x": 10, "y": 4,
+          "battery": "92%",
+          "payload": "24 заготовки",
+          "status": "STANDBY"
+        }
+      ]
+    },
+    "drone_assembly": {
+      "id": "drone_assembly",
+      "name": "Сборка БПЛА & Дронов Fanuc M-20",
+      "targetOutput": "528 drones/day",
+      "taktTime": 42.0,
+      "bottleneckNodeId": "ST-04",
+      "bottleneckReason": "Монтаж бортовой электроники и автопилота роботом Fanuc (42s)",
+      "orderNumber": "#8902-DR",
+      "partName": "ДРОН-РАЗВЕДЧИК X4-PRO",
+      "planQuantity": 200,
+      "factQuantity": 84,
+      "defects": 0,
+      "machines": []
+    },
+    "cubesat_satellite": {
+      "id": "cubesat_satellite",
+      "name": "Спутники CubeSat AeroLab QC",
+      "targetOutput": "4 satellites/day",
+      "taktTime": 12600.0,
+      "bottleneckNodeId": "ST-06",
+      "bottleneckReason": "Термовакуумное тестирование узлов СЭП и радиоканала (210 мин)",
+      "orderNumber": "#004-SAT",
+      "partName": "CUBESAT 6U KOSMOS-IOT",
+      "planQuantity": 4,
+      "factQuantity": 1,
+      "defects": 0,
+      "machines": []
+    }
+  }
+}

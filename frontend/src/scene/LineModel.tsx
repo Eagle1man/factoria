@@ -27,6 +27,7 @@ export default function LineModel({
   const speed = spinTag ? numeric(values[spinTag]) ?? 0 : 0
   const temp = heatTag ? numeric(values[heatTag]) ?? 20 : 20
   const load = numeric(values[`${line}.Load.Pct`]) ?? 0
+  const sp = numeric(values[`${line}.Speed.SP`])
   const quality = spinTag ? values[spinTag]?.q ?? 'BAD' : 'BAD'
   const running = visibilityTag ? Boolean(values[visibilityTag]?.v) : false
   const alarm = Number(values[`${line}.Alarm.Code`]?.v ?? 0)
@@ -38,7 +39,11 @@ export default function LineModel({
       <Html position={[0, 2.05, 0]} center distanceFactor={9} occlude={false}>
         <div className="scene-label">
           <b>{line}</b>
-          <span>{dead ? 'нет данных' : `${Math.round(speed)} rpm · ${temp.toFixed(0)} °C · ${load.toFixed(0)} %`}</span>
+          <span>
+            {dead
+              ? 'нет данных'
+              : `${Math.round(speed)} rpm${sp != null ? ` (SP ${Math.round(sp)})` : ''} · ${temp.toFixed(0)} °C · ${load.toFixed(0)} %${alarm ? ` · авария ${alarm}` : ''}`}
+          </span>
         </div>
       </Html>
     </group>

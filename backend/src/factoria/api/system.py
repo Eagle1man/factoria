@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from factoria.audit.storage import audit
 from factoria.auth.rbac import Principal, require
+from factoria.llm.provider import llm_status
 
 router = APIRouter(prefix="/api/v1", tags=["system"])
 
@@ -29,6 +30,7 @@ async def health(request: Request) -> dict:
             },
             "database": "ok",
         },
+        "llm": await llm_status(request.app.state.settings),
         "tags": {"total": len(registry.tags), "not_good": len(bad)},
         "snapshot_ts": snapshot["snapshot_ts"],
     }
