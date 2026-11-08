@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FACTORIA & AI — Поток цеха (демо)</title>
+<style>
+  :root {
+    --canvas:#0b1117; --surface:#131c26; --raised:#1a2532; --border:#223041; --border-strong:#2e4257;
+    --ink:#e6edf5; --muted:#8a9bb0; --faint:#5c6b7d;
+    --accent:#3ea6ff; --success:#2fbf71; --warning:#f2b544; --danger:#ef5350;
+    --font-ui: Inter, system-ui, Segoe UI, sans-serif;
+    --font-data: 'JetBrains Mono', Consolas, ui-monospace, monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink); font:13px/1.54 var(--font-ui); }
+  .wrap { max-width:1280px; margin:0 auto; padding:20px 20px 48px; }
+  .top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  h1 { font-size:22px; margin:0; letter-spacing:-.02em; }
+  .sub { color:var(--muted); font-size:12px; margin-top:4px; }
+  .demo-badge { font:11px/1.4 var(--font-data); color:var(--warning); border:1px solid #f2b54455; background:#f2b54412; padding:4px 10px; border-radius:999px; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .panel-title { font-weight:600; font-size:13px; }
+  .hint { color:var(--faint); font-size:11px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { border:1px solid var(--border); background:var(--raised); color:var(--ink); border-radius:999px; padding:6px 12px; cursor:pointer; font:12px/1.2 var(--font-ui); }
+  .chip:hover { border-color:var(--border-strong); }
+  .chip.active { border-color:var(--accent); background:#3ea6ff18; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .card { background:var(--raised); border:1px solid var(--border); border-radius:8px; padding:12px; }
+  .card.danger { border-color:#ef535066; }
+  .row { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .mono { font-family:var(--font-data); }
+  .muted { color:var(--muted); }
+  .faint { color:var(--faint); }
+  .badge { display:inline-block; font:11px/1.4 var(--font-data); padding:2px 8px; border-radius:999px; border:1px solid var(--border); }
+  .badge.good { color:var(--success); border-color:#2fbf7155; background:#2fbf7112; }
+  .badge.warn { color:var(--warning); border-color:#f2b54455; background:#f2b54412; }
+  .badge.bad { color:var(--danger); border-color:#ef535055; background:#ef535012; }
+  .badge.info { color:var(--accent); border-color:#3ea6ff55; background:#3ea6ff12; }
+  .btn { border:1px solid var(--border-strong); background:var(--raised); color:var(--ink); border-radius:6px; padding:7px 12px; cursor:pointer; font:12px/1.2 var(--font-ui); }
+  .btn:hover { border-color:var(--accent); }
+  .btn.primary { background:#3ea6ff22; border-color:var(--accent); color:#cfe8ff; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  canvas { display:block; width:100%; height:300px; border:1px solid var(--border); border-radius:8px; background:#0d1620; }
+  .copilot { display:grid; gap:8px; }
+  .step { background:#0f1822; border:1px solid var(--border); border-radius:8px; padding:10px; }
+  .step-title { margin-bottom:4px; }
+  .modal { position:fixed; inset:0; background:#000a; display:none; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .modal.open { display:flex; }
+  .modal-box { background:var(--surface); border:1px solid var(--border-strong); border-radius:10px; max-width:720px; width:100%; max-height:80vh; overflow:auto; padding:16px; }
+  pre { background:#0d1620; border:1px solid var(--border); border-radius:8px; padding:10px; overflow:auto; font:11px/1.5 var(--font-data); color:#cfe8ff; }
+  .footer { color:var(--faint); font-size:12px; margin-top:18px; }
+  a { color:var(--accent); text-decoration:none; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--success); display:inline-block; margin-right:6px; animation:pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  @media (max-width:640px) { h1{font-size:18px} canvas{height:240px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Поток цеха</h1>
+      <div class="sub">Шаблоны · 2.5D-схема · Co-Pilot (A1) · экспорт 1C/OPC UA — статическое демо</div>
+    </div>
+    <div class="demo-badge">DEMO · GitHub Pages · без backend/OPC UA</div>
+  </div>
+
+  <div class="panel" style="border-color:#f2b54444">
+    <div class="muted">
+      Это витрина страницы <span class="mono">/flow</span> из рабочего контура: данные и телеметрия <b>имитированы</b>,
+      кнопки экспорта формируют XML локально, запрос согласования <b>не отправляется</b>. Живой контур —
+      локально/LAN (эмулятор OPC UA + FastAPI + Vite).
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Шаблон производства</div>
+      <div class="hint">выбор меняет представление; контур 1C/PLC не управляется отсюда</div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid" id="summary"></div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Экспорт (read-only)</div>
+      <div class="hint">формируется из данных шаблона/реестра; PUSH в 1C отключён</div>
+    </div>
+    <div class="chips">
+      <button class="btn" id="export1c">Скачать 1C EnterpriseData</button>
+      <button class="btn" id="exportns">Скачать OPC UA NodeSet2</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">2.5D-схема потока</div>
+      <div class="hint"><span class="live-dot"></span>анимация витрины · подсветка узкого места и аварии</div>
+    </div>
+    <canvas id="flow" role="img" aria-label="Схема потока цеха"></canvas>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Co-Pilot (анализ узкого места)</div>
+      <div class="hint">детерминированный режим · LLM не подключён · действия через согласование (A1)</div>
+    </div>
+    <div class="copilot" id="copilot"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Участки линии</div>
+      <div class="hint">карточки узлов шаблона; «живые» обороты имитированы</div>
+    </div>
+    <div class="grid" id="stations"></div>
+  </div>
+
+  <div class="footer">
+    <a href="../">← Обзор проекта</a> · <a href="https://github.com/Eagle1man/factoria">Репозиторий</a> ·
+    полный контур: <span class="mono">docs/PROJECT-STATE.md</span>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="row" style="margin-bottom:10px">
+      <b>Запрос согласования (демо)</b>
+      <button class="btn" id="closeModal">Закрыть</button>
+    </div>
+    <div class="muted" style="margin-bottom:8px">
+      В рабочем контуре это <span class="mono">POST /api/v1/commands</span> типа <span class="mono">set_setpoint</span>
+      (A1, evidence). Здесь запрос <b>не отправляется</b> — показан только payload.
+    </div>
+    <pre id="payload"></pre>
+  </div>
+</div>
+
+<script>
+const DATA = {
+ "templates": [
+  {
+   "id": "cnc_metal",
+   "name": "ЧПУ металлообработка (DMU 50)",
+   "description": "Лазерная резка, перенос, фрезерование, робот, AGV. Узкое место — шпиндель DMU 50.",
+   "target_output": "1 489 шт/сутки",
+   "takt_time_s": 85.0,
+   "bottleneck_node_id": "ST-03",
+   "bottleneck_reason": "Черновой шпиндель DMU 50 (такт 85 с/деталь) сдерживает подачу.",
+   "bottleneck_line_id": "L1",
+   "order_number": "#1489-M",
+   "part_name": "ВТУЛКА-45М (сталь 40Х)",
+   "plan_quantity": 500,
+   "fact_quantity": 342,
+   "defects": 1,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "TRUMPF TruLaser 5030 Fiber",
+     "type": "laser",
+     "status": "RUNNING",
+     "takt_s": 24.0,
+     "line_id": "L1",
+     "metric_label": "Мощность",
+     "metric_value": "4.0 кВт",
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Конвейерный накопитель",
+     "type": "conveyor",
+     "status": "WARN_QUEUE",
+     "takt_s": null,
+     "line_id": "L1",
+     "metric_label": "Очередь",
+     "metric_value": "расчётная",
+     "note": "Очередь — расчётный показатель витрины."
+    },
+    {
+     "id": "ST-03",
+     "name": "Siemens Sinumerik DMU 50",
+     "type": "cnc",
+     "status": "BOTTLENECK",
+     "takt_s": 85.0,
+     "line_id": "L1",
+     "metric_label": "Обороты PV",
+     "metric_value": "из OPC UA",
+     "note": "Живые Speed/Temp/Load — из L1."
+    },
+    {
+     "id": "ST-04",
+     "name": "FANUC M-20iD",
+     "type": "robot",
+     "status": "RUNNING",
+     "takt_s": 14.2,
+     "line_id": "L2",
+     "metric_label": "Цикл",
+     "metric_value": "14.2 с",
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "AGV-флот",
+     "type": "agv",
+     "status": "STANDBY",
+     "takt_s": null,
+     "line_id": "L3",
+     "metric_label": "Статус",
+     "metric_value": "ожидание",
+     "note": null
+    }
+   ],
+   "sim_scenario": "nominal"
+  },
+  {
+   "id": "drone_assembly",
+   "name": "Сборка БПЛА и дронов (Fanuc M-20)",
+   "description": "Сборочная линия БПЛА. Узкое место — монтаж электроники роботом.",
+   "target_output": "528 дронов/сутки",
+   "takt_time_s": 42.0,
+   "bottleneck_node_id": "ST-04",
+   "bottleneck_reason": "Монтаж бортовой электроники и автопилота роботом Fanuc (42 с).",
+   "bottleneck_line_id": "L2",
+   "order_number": "#8902-DR",
+   "part_name": "ДРОН-РАЗВЕДЧИК X4-PRO",
+   "plan_quantity": 200,
+   "fact_quantity": 84,
+   "defects": 0,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Подача компонентов",
+     "type": "feeder",
+     "status": "RUNNING",
+     "takt_s": 18.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Сборка рамы",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 30.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Пайка/кабель",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 35.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "FANUC M-20: электроника",
+     "type": "robot",
+     "status": "BOTTLENECK",
+     "takt_s": 42.0,
+     "line_id": "L2",
+     "metric_label": "Узел",
+     "metric_value": "узкое место",
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Финальный контроль",
+     "type": "qc",
+     "status": "RUNNING",
+     "takt_s": 20.0,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    }
+   ],
+   "sim_scenario": "nominal"
+  },
+  {
+   "id": "cubesat_satellite",
+   "name": "Спутники CubeSat (AeroLab QC)",
+   "description": "Лабораторная сборка CubeSat. Узкое место — термовакуумные испытания.",
+   "target_output": "4 спутника/сутки",
+   "takt_time_s": 12600.0,
+   "bottleneck_node_id": "ST-06",
+   "bottleneck_reason": "Термовакуумное тестирование узлов СЭП и радиоканала (210 мин).",
+   "bottleneck_line_id": "L3",
+   "order_number": "#004-SAT",
+   "part_name": "CUBESAT 6U KOSMOS-IOT",
+   "plan_quantity": 4,
+   "fact_quantity": 1,
+   "defects": 0,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Сборка шасси",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 3600.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Интеграция полезной нагрузки",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 5400.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Проверка питания",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 1800.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "Радиоканал",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 2400.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Вибростенд",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 3600.0,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-06",
+     "name": "Термовакуумная камера",
+     "type": "chamber",
+     "status": "BOTTLENECK",
+     "takt_s": 12600.0,
+     "line_id": "L3",
+     "metric_label": "Режим",
+     "metric_value": "длительный прогон",
+     "note": null
+    }
+   ],
+   "sim_scenario": "hot_start"
+  },
+  {
+   "id": "battery_gigafactory",
+   "name": "Гигафабрика аккумуляторных ячеек",
+   "description": "Линия LFP-ячеек. Узкое место — заполнение электролитом в сухой комнате.",
+   "target_output": "124 282 ячейки/сутки",
+   "takt_time_s": 0.7,
+   "bottleneck_node_id": "ST-05",
+   "bottleneck_reason": "Заполнение электролитом в сухой комнате (такт ограничен выдержкой).",
+   "bottleneck_line_id": "L2",
+   "order_number": "#7710-BAT",
+   "part_name": "LFP-4680",
+   "plan_quantity": 100000,
+   "fact_quantity": 68420,
+   "defects": 142,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Намотка/укладка",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.5,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Сборка корпуса",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 0.55,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Сушка",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.6,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "Вакуумирование",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.65,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Заполнение электролитом",
+     "type": "dry_room",
+     "status": "BOTTLENECK",
+     "takt_s": 0.7,
+     "line_id": "L2",
+     "metric_label": "Узел",
+     "metric_value": "узкое место",
+     "note": null
+    },
+    {
+     "id": "ST-06",
+     "name": "Формирование/тест",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 0.6,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    }
+   ],
+   "sim_scenario": "overload"
+  }
+ ],
+ "registry": {
+  "namespace": "urn:mfg:emulator",
+  "lines": [
+   "L1",
+   "L2",
+   "L3"
+  ],
+  "tags": [
+   {
+    "id": "L1.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   }
+  ],
+  "methods": [
+   {
+    "name": "SetSpeed",
+    "args": [
+     [
+      "value",
+      "double"
+     ]
+    ]
+   },
+   {
+    "name": "SetRecipe",
+    "args": [
+     [
+      "recipe_id",
+      "string"
+     ]
+    ]
+   },
+   {
+    "name": "StartLine",
+    "args": []
+   },
+   {
+    "name": "StopLine",
+    "args": []
+   },
+   {
+    "name": "ReallocateJob",
+    "args": [
+     [
+      "job_id",
+      "string"
+     ]
+    ]
+   }
+  ]
+ }
+};
+
+const state = {
+  selected: DATA.templates[0].id,
+  tick: 0,
+  live: {},
+};
+
+const LINES = DATA.registry.lines;
+const BASE = { L1: 760, L2: 690, L3: 720 };
+
+function initLive() {
+  for (const line of LINES) {
+    state.live[line] = { speed: BASE[line] || 700, temp: 58, load: 78, alarm: 0, running: true };
+  }
+}
+
+function updateLive() {
+  state.tick += 1;
+  for (const line of LINES) {
+    const base = BASE[line] || 700;
+    const t = state.tick;
+    const speed = Math.max(0, Math.round(base + Math.sin(t / 7 + base) * 45 + (Math.random() * 12 - 6)));
+    const temp = 55 + Math.sin(t / 11 + base / 100) * 6 + Math.random() * 1.5;
+    const load = 74 + Math.sin(t / 9 + base / 200) * 9 + Math.random() * 2;
+    state.live[line] = { speed, temp, load, alarm: 0, running: true };
+  }
+}
+
+function current() {
+  return DATA.templates.find(t => t.id === state.selected) || DATA.templates[0];
+}
+
+function statusTone(s) {
+  if (s === 'RUNNING') return 'good';
+  if (s === 'BOTTLENECK') return 'bad';
+  if (s === 'WARN_QUEUE') return 'warn';
+  return 'info';
+}
+function statusLabel(s) {
+  return { RUNNING:'работает', BOTTLENECK:'узкое место', WARN_QUEUE:'очередь', STANDBY:'ожидание' }[s] || s;
+}
+
+function renderChips() {
+  const el = document.getElementById('chips');
+  el.innerHTML = '';
+  for (const t of DATA.templates) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (t.id === state.selected ? ' active' : '');
+    b.textContent = t.name;
+    b.title = t.description;
+    b.onclick = () => { state.selected = t.id; renderAll(); };
+    el.appendChild(b);
+  }
+}
+
+function renderSummary() {
+  const t = current();
+  const live = state.live[t.bottleneck_line_id] || {};
+  document.getElementById('summary').innerHTML = `
+    <div class="card">
+      <div class="panel-title" style="margin-bottom:8px">Заказ / план</div>
+      <div class="muted">
+        <div class="row"><span class="faint">Заказ</span><span class="mono">${t.order_number}</span></div>
+        <div class="row"><span class="faint">Изделие</span><span>${t.part_name}</span></div>
+        <div class="row"><span class="faint">План / факт</span><span class="mono">${t.fact_quantity} / ${t.plan_quantity}</span></div>
+        <div class="row"><span class="faint">Брак</span><span class="mono">${t.defects}</span></div>
+      </div>
+    </div>
+    <div class="card ${t.bottleneck_node_id ? 'danger' : ''}">
+      <div class="panel-title" style="margin-bottom:8px">Узел ограничения</div>
+      <div><span class="badge bad">${t.bottleneck_node_id}</span> <span class="muted">${t.bottleneck_reason}</span></div>
+      <div class="faint" style="margin-top:6px;font-size:12px">
+        Целевой выпуск: ${t.target_output} · такт ${t.takt_time_s} с
+        · линия ${t.bottleneck_line_id || '—'} · нагрузка ${live.load != null ? Math.round(live.load) + '%' : '—'}
+      </div>
+    </div>`;
+}
+
+function renderStations() {
+  const t = current();
+  const el = document.getElementById('stations');
+  el.innerHTML = '';
+  for (const s of t.stations) {
+    const live = s.line_id ? state.live[s.line_id] : null;
+    const liveValue = s.metric_label && s.metric_label.includes('Обороты') && live ? `${live.speed} rpm` : null;
+    const card = document.createElement('div');
+    card.className = 'card' + (s.status === 'BOTTLENECK' ? ' danger' : '');
+    card.innerHTML = `
+      <div class="row"><span class="mono muted">${s.id}</span><span class="badge ${statusTone(s.status)}">${statusLabel(s.status)}</span></div>
+      <div style="font-weight:600;margin-top:4px">${s.name}</div>
+      <div class="faint" style="margin-top:4px;font-size:12px">
+        ${s.type}${s.takt_s != null ? ' · такт ' + s.takt_s + ' с' : ''}${s.line_id ? ' · ' + s.line_id : ''}
+      </div>
+      ${s.metric_label ? `<div class="muted" style="margin-top:6px;font-size:12px">${s.metric_label}: <span class="mono">${liveValue || s.metric_value || '—'}</span></div>` : ''}
+      ${s.note ? `<div class="faint" style="margin-top:4px;font-size:11px">${s.note}</div>` : ''}`;
+    el.appendChild(card);
+  }
+}
+
+function renderCopilot() {
+  const t = current();
+  const line = t.bottleneck_line_id || 'L1';
+  const live = state.live[line] || {};
+  const load = Math.round(live.load || 0);
+  const temp = (live.temp || 0).toFixed(1);
+  const high = load > 90 || Number(temp) > 75;
+  const targetSp = Math.max(0, Math.round((live.speed || 700) * (high ? 0.85 : 0.95)));
+
+  const steps = [
+    ['Шаг 1', 'info', 'Анализ состояния', `Участок ${t.bottleneck_node_id} (${line}): аварийного кода нет, загрузка ${load}%, температура ${temp} °C. Основание: имитированные теги L1-L3 + описание шаблона.`],
+    ['Шаг 2', high ? 'warn' : 'info', 'Рекомендация', high
+      ? 'Риск перегруза/перегрева: рекомендуется снизить уставку скорости на 10–15% и перепроверить состояние линии до изменения.'
+      : 'Признаков критического перегруза по доступным сигналам нет. Можно рассмотреть плавное изменение уставки только после проверки оператором.'],
+    ['Шаг 3', 'info', 'Действие и границы', `Действие с записью в контур (если выбрано): set_setpoint для ${line}, целевая уставка ${targetSp} rpm — только через очередь согласований (A1). AGV/наряд 1С:ТОиР — вне автоматического транспорта, оформляются вручную/экспортом.`],
+  ];
+
+  const el = document.getElementById('copilot');
+  el.innerHTML = steps.map(([tag, tone, title, text]) => `
+    <div class="step">
+      <div class="step-title"><span class="badge ${tone === 'warn' ? 'warn' : 'info'}">${tag}</span> <span class="muted">${title}</span></div>
+      <div>${text}</div>
+    </div>`).join('') + `
+    <div class="chips">
+      <button class="btn primary" id="draft">Подготовить согласование: уставка ${line} → ${targetSp} rpm</button>
+      <span class="hint">в демо payload не отправляется; в контуре — POST /commands (A1)</span>
+    </div>`;
+
+  document.getElementById('draft').onclick = () => {
+    const payload = {
+      command_id: 'cmd-demo-' + Date.now().toString(36),
+      type: 'set_setpoint',
+      target: { line_id: line },
+      params: { setpoint_value: targetSp },
+      requested_by: { kind: 'human', id: 'demo' },
+      correlation_id: 'cor-demo-' + Date.now().toString(36),
+      evidence: ['template:' + t.id, 'bottleneck:' + t.bottleneck_node_id, 'load:' + load, 'alarm:0'],
+    };
+    document.getElementById('payload').textContent = JSON.stringify(payload, null, 2);
+    document.getElementById('modal').classList.add('open');
+  };
+}
+
+function drawFlow() {
+  const canvas = document.getElementById('flow');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.strokeStyle = 'rgba(62,166,255,.07)';
+  for (let x = 0; x < w; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+
+  const t = current();
+  const stations = t.stations;
+  const n = Math.max(1, stations.length);
+  const pad = 34;
+  const y = Math.floor(h * 0.64);
+  const span = Math.max(120, w - pad * 2);
+  const step = span / Math.max(1, n - 1);
+
+  ctx.strokeStyle = '#223041'; ctx.lineWidth = 14; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + span, y); ctx.stroke();
+
+  state.part = ((state.part || 0) + 0.7) % 46;
+  ctx.fillStyle = '#3ea6ff';
+  for (let x = pad - 20; x < pad + span; x += 46) {
+    const px = x + state.part;
+    if (px >= pad - 6 && px <= pad + span + 6) { ctx.beginPath(); ctx.arc(px, y, 4, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  stations.forEach((s, i) => {
+    const x = pad + (n === 1 ? span / 2 : i * step);
+    const live = s.line_id ? state.live[s.line_id] : null;
+    const alarm = live && live.alarm ? live.alarm : 0;
+    const isB = s.status === 'BOTTLENECK' || s.id === t.bottleneck_node_id;
+    const base = s.status === 'BOTTLENECK' ? '#ef5350' : s.status === 'WARN_QUEUE' ? '#f2b544' : s.status === 'RUNNING' ? '#2fbf71' : '#5c6b7d';
+    const bw = Math.min(100, Math.max(60, span / n - 10));
+    const bh = 56;
+    const by = y - bh - 26;
+
+    ctx.fillStyle = alarm ? '#4a1f26' : isB ? '#4a1f26' : '#1a2532';
+    ctx.strokeStyle = alarm ? '#ef5350' : base;
+    ctx.lineWidth = isB ? 2 : 1;
+    ctx.beginPath(); ctx.rect(x - bw / 2, by, bw, bh); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, by + bh); ctx.lineTo(x, y - 7); ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#e6edf5'; ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.fillText(s.id, x, by + 18);
+    ctx.fillStyle = '#8a9bb0'; ctx.font = '10px Inter, system-ui, sans-serif';
+    ctx.fillText(s.name.length > 14 ? s.name.slice(0, 13) + '…' : s.name, x, by + 34);
+    if (isB) { ctx.fillStyle = '#f2b544'; ctx.font = 'bold 9px Consolas, monospace'; ctx.fillText('BOTTLENECK', x, by - 6); }
+    if (s.line_id) { ctx.fillStyle = '#5c6b7d'; ctx.font = '9px Consolas, monospace'; ctx.fillText(s.line_id, x, y + 22); }
+  });
+
+  const bLine = t.bottleneck_line_id;
+  const bLive = bLine ? state.live[bLine] : null;
+  ctx.textAlign = 'left'; ctx.fillStyle = '#8a9bb0'; ctx.font = '11px Inter, system-ui, sans-serif';
+  ctx.fillText(bLive ? `нагрузка ${bLine}: ${Math.round(bLive.load)}% (имитация сигнала OPC UA)` : `узел ${t.bottleneck_node_id}: расчётный показатель витрины`, 12, h - 12);
+
+  requestAnimationFrame(drawFlow);
+}
+
+function renderAll() {
+  renderChips();
+  renderSummary();
+  renderStations();
+  renderCopilot();
+}
+
+function xmlEscape(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function download(name, text, type) {
+  const blob = new Blob([text], { type: type || 'application/xml;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function export1c() {
+  const t = current();
+  const now = new Date().toISOString().slice(0, 19);
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<EnterpriseData xmlns="http://v8.1c.ru/edi/edi_stnd/EnterpriseData/1.14" formatVersion="1.14">
+  <Header>
+    <FormatVersion>1.14</FormatVersion>
+    <CreationDateTime>${now}</CreationDateTime>
+    <SourceApplication>FACTORIA &amp; AI (read-only export, static demo)</SourceApplication>
+  </Header>
+  <Body>
+    <Document.СменноСуточноеЗадание>
+      <Номер>${xmlEscape(t.order_number)}</Номер>
+      <Дата>${now.slice(0, 10)}</Дата>
+      <Подразделение>Линии ${DATA.registry.lines.join(', ')} (${xmlEscape(t.name)})</Подразделение>
+      <Номенклатура>${xmlEscape(t.part_name)}</Номенклатура>
+      <План>${t.plan_quantity}</План>
+      <Факт>${t.fact_quantity}</Факт>
+      <Брак>${t.defects}</Брак>
+      <Статус>Выгружено_ТолькоЧтение</Статус>
+      <Примечание>Экспорт сформирован в статическом демо. Отправка в 1C (PUSH/OData) отключена: контур 1C — read-only.</Примечание>
+    </Document.СменноСуточноеЗадание>
+  </Body>
+</EnterpriseData>`;
+  download(`factoria-enterprise-${t.id}.xml`, xml);
+}
+
+const DT = { bool:'i=1', float:'i=11', uint16:'i=5', string:'i=12' };
+
+function exportNodeset() {
+  const reg = DATA.registry;
+  let vars = '';
+  for (const tag of reg.tags) {
+    vars += `  <UAVariable NodeId="ns=1;s=${xmlEscape(tag.id)}" BrowseName="1:${xmlEscape(tag.name)}" DataType="${DT[tag.type] || 'i=24'}" AccessLevel="1">
+    <DisplayName>${xmlEscape(tag.id)}</DisplayName>
+    <Description>line=${xmlEscape(tag.id.split('.')[0])}, type=${tag.type}, unit=${tag.unit || '-'}, max_age=${tag.max_age}s, writable=${tag.writable}</Description>
+  </UAVariable>\n`;
+  }
+  let methods = '';
+  for (const m of reg.methods) for (const line of reg.lines) {
+    methods += `  <UAMethod NodeId="ns=1;s=${line}.${xmlEscape(m.name)}" BrowseName="1:${xmlEscape(m.name)}" Executable="true" UserExecutable="false"/>\n`;
+  }
+  const xml = `<?xml version="1.0" encoding="utf-8"?>
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd">
+  <NamespaceUris>
+    <Uri>${xmlEscape(reg.namespace)}</Uri>
+  </NamespaceUris>
+${vars}${methods}</UANodeSet>`;
+  download('factoria-opcua-nodeset2.xml', xml);
+}
+
+document.getElementById('export1c').onclick = export1c;
+document.getElementById('exportns').onclick = exportNodeset;
+document.getElementById('closeModal').onclick = () => document.getElementById('modal').classList.remove('open');
+document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') e.target.classList.remove('open'); };
+
+initLive();
+updateLive();
+renderAll();
+drawFlow();
+setInterval(() => { updateLive(); renderSummary(); renderStations(); renderCopilot(); }, 1200);
+</script>
+</body>
+</html>

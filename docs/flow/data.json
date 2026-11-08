@@ -1,0 +1,533 @@
+{
+ "templates": [
+  {
+   "id": "cnc_metal",
+   "name": "ЧПУ металлообработка (DMU 50)",
+   "description": "Лазерная резка, перенос, фрезерование, робот, AGV. Узкое место — шпиндель DMU 50.",
+   "target_output": "1 489 шт/сутки",
+   "takt_time_s": 85.0,
+   "bottleneck_node_id": "ST-03",
+   "bottleneck_reason": "Черновой шпиндель DMU 50 (такт 85 с/деталь) сдерживает подачу.",
+   "bottleneck_line_id": "L1",
+   "order_number": "#1489-M",
+   "part_name": "ВТУЛКА-45М (сталь 40Х)",
+   "plan_quantity": 500,
+   "fact_quantity": 342,
+   "defects": 1,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "TRUMPF TruLaser 5030 Fiber",
+     "type": "laser",
+     "status": "RUNNING",
+     "takt_s": 24.0,
+     "line_id": "L1",
+     "metric_label": "Мощность",
+     "metric_value": "4.0 кВт",
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Конвейерный накопитель",
+     "type": "conveyor",
+     "status": "WARN_QUEUE",
+     "takt_s": null,
+     "line_id": "L1",
+     "metric_label": "Очередь",
+     "metric_value": "расчётная",
+     "note": "Очередь — расчётный показатель витрины."
+    },
+    {
+     "id": "ST-03",
+     "name": "Siemens Sinumerik DMU 50",
+     "type": "cnc",
+     "status": "BOTTLENECK",
+     "takt_s": 85.0,
+     "line_id": "L1",
+     "metric_label": "Обороты PV",
+     "metric_value": "из OPC UA",
+     "note": "Живые Speed/Temp/Load — из L1."
+    },
+    {
+     "id": "ST-04",
+     "name": "FANUC M-20iD",
+     "type": "robot",
+     "status": "RUNNING",
+     "takt_s": 14.2,
+     "line_id": "L2",
+     "metric_label": "Цикл",
+     "metric_value": "14.2 с",
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "AGV-флот",
+     "type": "agv",
+     "status": "STANDBY",
+     "takt_s": null,
+     "line_id": "L3",
+     "metric_label": "Статус",
+     "metric_value": "ожидание",
+     "note": null
+    }
+   ],
+   "sim_scenario": "nominal"
+  },
+  {
+   "id": "drone_assembly",
+   "name": "Сборка БПЛА и дронов (Fanuc M-20)",
+   "description": "Сборочная линия БПЛА. Узкое место — монтаж электроники роботом.",
+   "target_output": "528 дронов/сутки",
+   "takt_time_s": 42.0,
+   "bottleneck_node_id": "ST-04",
+   "bottleneck_reason": "Монтаж бортовой электроники и автопилота роботом Fanuc (42 с).",
+   "bottleneck_line_id": "L2",
+   "order_number": "#8902-DR",
+   "part_name": "ДРОН-РАЗВЕДЧИК X4-PRO",
+   "plan_quantity": 200,
+   "fact_quantity": 84,
+   "defects": 0,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Подача компонентов",
+     "type": "feeder",
+     "status": "RUNNING",
+     "takt_s": 18.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Сборка рамы",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 30.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Пайка/кабель",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 35.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "FANUC M-20: электроника",
+     "type": "robot",
+     "status": "BOTTLENECK",
+     "takt_s": 42.0,
+     "line_id": "L2",
+     "metric_label": "Узел",
+     "metric_value": "узкое место",
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Финальный контроль",
+     "type": "qc",
+     "status": "RUNNING",
+     "takt_s": 20.0,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    }
+   ],
+   "sim_scenario": "nominal"
+  },
+  {
+   "id": "cubesat_satellite",
+   "name": "Спутники CubeSat (AeroLab QC)",
+   "description": "Лабораторная сборка CubeSat. Узкое место — термовакуумные испытания.",
+   "target_output": "4 спутника/сутки",
+   "takt_time_s": 12600.0,
+   "bottleneck_node_id": "ST-06",
+   "bottleneck_reason": "Термовакуумное тестирование узлов СЭП и радиоканала (210 мин).",
+   "bottleneck_line_id": "L3",
+   "order_number": "#004-SAT",
+   "part_name": "CUBESAT 6U KOSMOS-IOT",
+   "plan_quantity": 4,
+   "fact_quantity": 1,
+   "defects": 0,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Сборка шасси",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 3600.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Интеграция полезной нагрузки",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 5400.0,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Проверка питания",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 1800.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "Радиоканал",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 2400.0,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Вибростенд",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 3600.0,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-06",
+     "name": "Термовакуумная камера",
+     "type": "chamber",
+     "status": "BOTTLENECK",
+     "takt_s": 12600.0,
+     "line_id": "L3",
+     "metric_label": "Режим",
+     "metric_value": "длительный прогон",
+     "note": null
+    }
+   ],
+   "sim_scenario": "hot_start"
+  },
+  {
+   "id": "battery_gigafactory",
+   "name": "Гигафабрика аккумуляторных ячеек",
+   "description": "Линия LFP-ячеек. Узкое место — заполнение электролитом в сухой комнате.",
+   "target_output": "124 282 ячейки/сутки",
+   "takt_time_s": 0.7,
+   "bottleneck_node_id": "ST-05",
+   "bottleneck_reason": "Заполнение электролитом в сухой комнате (такт ограничен выдержкой).",
+   "bottleneck_line_id": "L2",
+   "order_number": "#7710-BAT",
+   "part_name": "LFP-4680",
+   "plan_quantity": 100000,
+   "fact_quantity": 68420,
+   "defects": 142,
+   "stations": [
+    {
+     "id": "ST-01",
+     "name": "Намотка/укладка",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.5,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-02",
+     "name": "Сборка корпуса",
+     "type": "assembly",
+     "status": "RUNNING",
+     "takt_s": 0.55,
+     "line_id": "L1",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-03",
+     "name": "Сушка",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.6,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-04",
+     "name": "Вакуумирование",
+     "type": "process",
+     "status": "RUNNING",
+     "takt_s": 0.65,
+     "line_id": "L2",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    },
+    {
+     "id": "ST-05",
+     "name": "Заполнение электролитом",
+     "type": "dry_room",
+     "status": "BOTTLENECK",
+     "takt_s": 0.7,
+     "line_id": "L2",
+     "metric_label": "Узел",
+     "metric_value": "узкое место",
+     "note": null
+    },
+    {
+     "id": "ST-06",
+     "name": "Формирование/тест",
+     "type": "test",
+     "status": "RUNNING",
+     "takt_s": 0.6,
+     "line_id": "L3",
+     "metric_label": null,
+     "metric_value": null,
+     "note": null
+    }
+   ],
+   "sim_scenario": "overload"
+  }
+ ],
+ "registry": {
+  "namespace": "urn:mfg:emulator",
+  "lines": [
+   "L1",
+   "L2",
+   "L3"
+  ],
+  "tags": [
+   {
+    "id": "L1.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L1.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L2.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Running",
+    "name": "Running",
+    "type": "bool",
+    "unit": null,
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Speed.SP",
+    "name": "Speed.SP",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Speed.PV",
+    "name": "Speed.PV",
+    "type": "float",
+    "unit": "rpm",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Temp.PV",
+    "name": "Temp.PV",
+    "type": "float",
+    "unit": "degC",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Load.Pct",
+    "name": "Load.Pct",
+    "type": "float",
+    "unit": "percent",
+    "max_age": 3.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Alarm.Code",
+    "name": "Alarm.Code",
+    "type": "uint16",
+    "unit": null,
+    "max_age": 5.0,
+    "writable": false
+   },
+   {
+    "id": "L3.Recipe.ID",
+    "name": "Recipe.ID",
+    "type": "string",
+    "unit": null,
+    "max_age": 30.0,
+    "writable": false
+   }
+  ],
+  "methods": [
+   {
+    "name": "SetSpeed",
+    "args": [
+     [
+      "value",
+      "double"
+     ]
+    ]
+   },
+   {
+    "name": "SetRecipe",
+    "args": [
+     [
+      "recipe_id",
+      "string"
+     ]
+    ]
+   },
+   {
+    "name": "StartLine",
+    "args": []
+   },
+   {
+    "name": "StopLine",
+    "args": []
+   },
+   {
+    "name": "ReallocateJob",
+    "args": [
+     [
+      "job_id",
+      "string"
+     ]
+    ]
+   }
+  ]
+ }
+}
