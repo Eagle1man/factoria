@@ -85,3 +85,12 @@ npm run build
 ```
 
 Прототип спеки (изолированно, требует CDN): `cd D:\factoria\docs\spec\stitch-threejs && python -m http.server 3099` → `/prototype.html`.
+
+## GitHub Pages: приложение «один в один»
+
+- `frontend/demo.html` + `frontend/src/demo/main.tsx`: монтируется **тот же `App`** (реальные `Flow`, `FlowCanvas`, `CoPilotPanel`, `Layout`, 3D-сцена), маршрут `MemoryRouter('/flow')`.
+- `frontend/src/demo/mock.ts`: браузерная замена backend — `fetch`/`WebSocket` перехватываются; шаблоны из `data.json` (сгенерированы из `factoria.templates`), телеметрия L1-L3 имитируется, команды A1 кладутся в очередь, экспорт XML формируется на клиенте, sim-прогоны/двойник/аудит отвечают минимальными данными.
+- Сборка: `cd frontend && npm run build:demo` → `docs/app/` (`demo.html` переименовывается в `index.html`), `base: './'`.
+- URL: `/app/`; старый `/flow/` — meta-refresh на `/app/`.
+- Проверено headless Chrome: `/flow/` → `/app/`, 11 пунктов навигации, canvas 2.5D, 3D-сцена открывается, Co-Pilot создаёт запрос, очередь согласований работает, экспорт скачивается, JS-ошибок и 404 нет.
+- Ограничение: данные имитированы, запись в 1C/PLC отсутствует; живой контур — локально (FastAPI + OPC UA).

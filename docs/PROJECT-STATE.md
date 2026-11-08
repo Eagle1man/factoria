@@ -16,6 +16,7 @@
 | Безопасность: ws_ticket, refresh/отзыв, лимит входа, экспорт аудита | работает | `report-security.md` |
 | Поток цеха: 4 шаблона (Stitch), 2.5D-схема, Co-Pilot (детерминированный, A1), экспорт XML, запуск sim-сценария | работает | `report-stitch-merge.md` |
 | LLM-провайдер: `none/deepseek/ollama`, статус в `/health` без секретов (ADR-121) | конфиг готов | env/ключ/VM — решение владельца |
+| GitHub Pages: приложение `/app/` — тот же React UI, backend заменён браузерной реализацией | демо | `docs/app/`, сборка `npm run build:demo` |
 | Журнал аудита, настройки | работает | скриншоты |
 
 Стек: Python 3.14.3, FastAPI, SQLAlchemy/aiosqlite, asyncua 2.1.0,

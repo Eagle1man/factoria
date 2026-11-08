@@ -106,7 +106,12 @@ export default function CoPilotPanel({
     }
   }
 
-  const canDraft = role === 'operator' || role === 'lead' || role === 'admin'
+  const canDraft =
+    role === 'production_specialist' ||
+    role === 'technologist' ||
+    role === 'project_lead' ||
+    role === 'enterprise_head' ||
+    role === 'it_admin'
 
   return (
     <Panel
