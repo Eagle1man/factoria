@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FACTORIA & AI — обзор и демо</title>
+  <style>
+    :root { --bg:#0b1117; --panel:#131c26; --line:#223041; --ink:#e6edf5; --muted:#8a9bb0; --accent:#3ea6ff; --ok:#2fbf71; --warn:#f2b544; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:14px/1.55 Inter, system-ui, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+    .wrap { max-width:1100px; margin:0 auto; padding:28px 20px 48px; }
+    h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
+    h2 { margin:28px 0 10px; font-size:16px; color:var(--ink); }
+    p, li { color:var(--muted); }
+    .sub { color:var(--muted); margin:0 0 18px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+    .card b { color:var(--ink); }
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; font:12px/1.4 JetBrains Mono, monospace; border:1px solid var(--line); color:var(--muted); }
+    .ok { color:var(--ok); border-color:#2fbf7144; } .warn { color:var(--warn); border-color:#f2b54444; }
+    pre { background:#0e1720; border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; color:var(--ink); font:12px/1.5 JetBrains Mono, Consolas, monospace; }
+    a { color:var(--accent); }
+    .shots { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+    figure { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    figure img { display:block; width:100%; height:auto; }
+    figcaption { padding:8px 10px; font-size:12px; color:var(--muted); }
+    .note { font-size:12px; color:var(--muted); border-left:3px solid var(--line); padding-left:10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>FACTORIA &amp; AI</h1>
+    <p class="sub">Мультиагентная платформа управления производством: OPC UA ↔ backend ↔ UI, цифровой двойник, эксперименты, согласование действий (A1). Обзорная страница (репозиторий <code>D:\factoria</code>).</p>
+
+    <div class="grid">
+      <div class="card"><b>Проверки</b><br/><span class="tag ok">185 тестов</span> <span class="tag ok">ruff clean</span> <span class="tag ok">frontend build ok</span><br/><span style="color:var(--muted);font-size:12px">pytest <code>tests/</code>, tsc+vite. Покрытие ранее 91% (не пересчитывалось).</span></div>
+      <div class="card"><b>Безопасность</b><br/>1C read-only, без PUSH/OData-записи; LLM без транспорта к PLC; действия A1 через согласование; <code>ALLOW_EXTERNAL_API=false</code> по умолчанию; секреты не отдаются в health.</div>
+      <div class="card"><b>Новое (интеграция Stitch/Three.js)</b><br/>Страница <b>«Поток цеха»</b> (/flow): 4 шаблона, 2.5D-схема, Co-Pilot (детерминированный, A1), экспорт 1C EnterpriseData/OPC UA NodeSet2 (read-only), запуск sim-сценария. Слой <code>LLM_PROVIDER</code> (none/deepseek/ollama) + статус в <code>/health</code> (ADR-121).</div>
+    </div>
+
+    <h2>Что сделано в проекте</h2>
+    <ul>
+      <li><b>Контур данных:</b> OPC UA-эмулятор (3 линии, 21 тег, 5 method-нод, interlocks) → FastAPI (JWT/RBAC, кэш, WS-тикеты, SQLite/Alembic, аудит) → React/Vite UI.</li>
+      <li><b>Функции:</b> обзор, производство, документы 1С (stub/адаптеры), двойник (срезы/история/сравнение), эксперименты (5 сценариев, seed, сравнение), согласования (A1/A2-коридор), журнал, 3D-сцена, настройки.</li>
+      <li><b>Поток цеха (новое):</b> шаблоны cnc_metal/drone_assembly/cubesat_satellite/battery_gigafactory с явной привязкой к L1-L3 (реестр <code>urn:mfg:emulator</code> не менялся); 2.5D Canvas по живым сигналам; Co-Pilot создаёт реальный <code>set_setpoint</code> (A1, evidence) в очередь согласований — не в PLC/1C напрямую; экспорт XML из реестра (21 тег, 15 методов), без PUSH.</li>
+      <li><b>LLM-слой:</b> конфиг/health для <code>none|deepseek|ollama</code> (qwen3.5:35b по умолчанию), без утечки ключей; фактические агентные вызовы — при наличии env/VM/ключа (thinking off для tool-calling).</li>
+      <li><b>Качество:</b> 185 тестов, ruff без замечаний, tsc+vite build ок.</li>
+    </ul>
+
+    <h2>Демо (локально / в LAN)</h2>
+    <pre># 1) эмулятор
+python opcua-emulator/emulator.py
+
+# 2) backend (:8010) — порт 8010, т.к. 8000 в этой среде подвисал
+$env:PYTHONPATH="D:\factoria\backend\src"
+$env:DATABASE_URL="sqlite+aiosqlite:///D:/factoria/data/factoria.db"
+$env:OPCUA_ENDPOINT="opc.tcp://127.0.0.1:48400"
+$env:ENV="dev"
+python -m uvicorn factoria.main:app --host 0.0.0.0 --port 8010
+
+# 3) frontend (:5173)
+cd frontend
+npm run dev -- --host 0.0.0.0</pre>
+    <p>Вход: <code>operator</code> / <code>dev-password</code> (журнал — <code>auditor</code> / <code>dev-password</code>). В LAN использовать адрес хоста (напр. <code>http://192.168.0.15:5173</code>); при блокировке — открыть входящие TCP 5173/8010 в брандмауэре (от админа).</p>
+    <p class="note">GitHub Pages показывает только эту статическую страницу (без живого backend/OPC UA). Для живого демо запустите стек локально.</p>
+
+    <h2>Скриншоты (существующие артефакты)</h2>
+    <div class="shots">
+      <figure><img src="assessment/checks/shots/production_1920.png" alt="Производство" loading="lazy"/><figcaption>Производство (1920)</figcaption></figure>
+      <figure><img src="assessment/checks/shots/twin_1920.png" alt="Двойник" loading="lazy"/><figcaption>Цифровой двойник</figcaption></figure>
+      <figure><img src="assessment/checks/shots/scene_1920.png" alt="3D-сцена" loading="lazy"/><figcaption>3D-сцена (процедурный станок, Speed.PV)</figcaption></figure>
+      <figure><img src="assessment/checks/shots/approvals_1920.png" alt="Согласования" loading="lazy"/><figcaption>Согласования (A1)</figcaption></figure>
+      <figure><img src="assessment/checks/shots/experiments_1920.png" alt="Эксперименты" loading="lazy"/><figcaption>Эксперименты</figcaption></figure>
+      <figure><img src="assessment/checks/shots/audit_1920.png" alt="Журнал" loading="lazy"/><figcaption>Журнал аудита</figcaption></figure>
+    </div>
+    <p class="note">Скриншот страницы <code>/flow</code> (Поток цеха) не перегенерирован в этом прогоне; фронтенд собран, раздел доступен при запущенном стеке.</p>
+
+    <h2>Документы</h2>
+    <ul>
+      <li><a href="PROJECT-STATE.md">PROJECT-STATE.md</a> — состояние, запуск, проверки</li>
+      <li><a href="assessment/report-stitch-merge.md">report-stitch-merge.md</a> — факт интеграции Stitch/LLM</li>
+      <li><a href="decisions.md">decisions.md</a> — ADR-101…121</li>
+      <li><a href="api.md">api.md</a>, <a href="specification.md">specification.md</a>, <a href="security/ot-baseline.md">security/ot-baseline.md</a></li>
+    </ul>
+
+    <h2>Ограничения (честно)</h2>
+    <ul>
+      <li>Фактические LLM-вызовы/агенты — при наличии <code>DEEPSEEK_API_KEY</code> и/или Ollama VM (URL, модель, auth); слой готов.</li>
+      <li>Реальная 1С (4b) заблокирована лицензией/базой (ADR-118). Нет PUSH в 1C/PLC.</li>
+      <li>Коммиты/push — действие владельца репозитория.</li>
+    </ul>
+  </div>
+</body>
+</html>
